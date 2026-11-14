@@ -1,0 +1,68 @@
+{
+  "demo_data": true,
+  "notice": "Demonstration data: every announcement below is fictional and was written to show how the Staff Bulletin works. These are not real University of Tennessee or University Housing communications.",
+  "announcements": [
+    {
+      "id": "demo-001",
+      "title": "[Demo] Building staff meeting moved to Thursday",
+      "description": "This week's building staff meeting moves from Tuesday to Thursday evening in the main lounge. Bring your floor updates and any questions for your Hall Director.",
+      "category": "meetings",
+      "published": "2026-11-12",
+      "pinned": true
+    },
+    {
+      "id": "demo-002",
+      "title": "[Demo] Winter break closing checklists due",
+      "description": "Complete your floor's winter break closing checklist and return it to the front desk. Your Hall Director will share the checklist at the next staff meeting.",
+      "category": "deadlines",
+      "published": "2026-11-10",
+      "due": "2026-12-05",
+      "pinned": true
+    },
+    {
+      "id": "demo-003",
+      "title": "[Demo] December floor program proposals",
+      "description": "Submit your December floor program idea to your Assistant Hall Director for review. Include the event title, a short description, and the date you have in mind.",
+      "category": "programming",
+      "published": "2026-11-11",
+      "due": "2026-11-21"
+    },
+    {
+      "id": "demo-004",
+      "title": "[Demo] One-on-one sign-ups are open",
+      "description": "Sign up for a 20-minute one-on-one with your Hall Director using the sheet posted in the staff office.",
+      "category": "meetings",
+      "published": "2026-11-09"
+    },
+    {
+      "id": "demo-005",
+      "title": "[Demo] Front desk schedule swap requests",
+      "description": "Need to swap a front desk shift before Thanksgiving break? Post your request in the staff group chat and confirm the swap with your Assistant Hall Director.",
+      "category": "general",
+      "published": "2026-11-13"
+    },
+    {
+      "id": "demo-006",
+      "title": "[Demo] Bulletin board theme for December",
+      "description": "December bulletin boards should focus on finals-week wellness and study resources. Supplies are available in the staff office.",
+      "category": "programming",
+      "published": "2026-11-06",
+      "due": "2026-12-01"
+    },
+    {
+      "id": "demo-007",
+      "title": "[Demo] Mid-semester resident check-in forms",
+      "description": "Complete a brief check-in conversation with each resident on your floor and turn in your summary sheet to your Hall Director.",
+      "category": "deadlines",
+      "published": "2026-11-04",
+      "due": "2026-11-18"
+    },
+    {
+      "id": "demo-008",
+      "title": "[Demo] Staff office supply restock",
+      "description": "The staff office supply cabinet has been restocked with markers, tape, and poster paper for floor events and door decorations.",
+      "category": "general",
+      "published": "2026-11-02"
+    }
+  ]
+}

@@ -11,7 +11,7 @@
 7. **Retrieval order:** keyword retrieval over the catalog first, ChromaDB semantic retrieval second, behind one interface. Keyword stays as fallback.
 8. **Catalog guard:** loader rejects reserved placeholder hosts (`example.org/.com/.net`) unless a test explicitly allows them; validation is all-or-nothing and reports every error.
 9. **Initial categories:** maintenance, reporting, programming, policies (from PRD; revisit once real resources are collected).
-10. **Staff bulletin:** remains stretch-only; not implemented.
+10. **Staff bulletin:** remains stretch-only; not implemented. *(Superseded 2026-11-14 by item 37.)*
 
 ## 2026-11-13 — First resources + Milestone 2
 
@@ -50,3 +50,14 @@
 34. **Prompt rules:** full walkthrough → all steps in order with sub-steps/notes; specific question → answer only that; never invent steps/fees/deadlines/fields; keep template placeholders; never request or repeat personal details. Inline numbered answers are re-lined by code (formatting only, words unchanged).
 35. **Privacy check:** obvious IDs/SSNs/emails/phones block retrieval and Gemini and are redacted from session history. Explicitly not comprehensive.
 36. **Hybrid tuning:** semantic page candidates 2 → 1 (fixed a PDF regression caused by procedure units; best R@3). A heading-weight boost was tried and rejected.
+
+## 2026-11-14 — Milestone 5: Staff Bulletin (approved)
+
+37. **Staff Bulletin implemented** as a read-only dashboard tab, the **last** tab after all resource categories (category order unchanged). *(Navigation superseded by item 43.)* Data: local `data/bulletins.json`; logic: `reslink/bulletin.py` (standard library only); UI: `reslink/ui.render_bulletin` (a `st.fragment`, built-in widgets only: text search, multi-select category pills, badges).
+38. **Strictly separate from Larry and the AI pipeline:** bulletins are never indexed, embedded, retrieved, or sent to Gemini; retrieval/semantic/assistant/ingest/procedures/catalog/larry/privacy never import `reslink.bulletin` (enforced by tests). No creation/editing UI, notifications, database, auth, or external APIs.
+39. **Data contract:** `{demo_data, notice, announcements[]}`; each announcement requires `id, title, description, category (meetings|deadlines|programming|general), published (YYYY-MM-DD)`, with optional `due` (YYYY-MM-DD, shown as a badge, **never** used for sorting) and `pinned` (bool). Strict, all-or-nothing validation reporting every problem.
+40. **Ordering and search:** pinned first; within each group newest `published` first; ties by title then id. Search is case-insensitive over title + description with every word required; an empty category selection means all categories.
+41. **Failure isolation:** a missing file shows "not set up yet"; an invalid or unreadable file shows an error inside the bulletin only; the resource dashboard and Larry are unaffected. If the catalog is invalid, the bulletin still renders below the catalog error.
+42. **Demo content:** 8 fictional announcements (2 pinned) across all four categories, file-level `demo_data: true` with a visible banner, `[Demo]` title prefixes, generic roles only, and no fees, policies, or links that could contradict verified sources.
+43. **Navigation refinement (approved):** a top-level `st.segmented_control` (**Resources | Staff Bulletin**, `required=True`, so a section is always selected) replaces the single tab row. Resources shows the category tabs exactly as before; Staff Bulletin shows only the bulletin. The bulletin **search box was removed from the UI** (browse or filter by category); `bulletin.search()` stays in the module with its tests. Larry floats over both sections and its history survives switching. A broken catalog now only affects Resources. No CSS, sidebar, or dependencies added. This also fixes the phone issue where the 7th tab was off-screen.
+44. **Read/unread tracking (approved):** a session-only set of read announcement IDs in `st.session_state["bulletin_read_ids"]`. No persistence, database, or schema/JSON change. Everything starts unread; only an explicit "Mark as read / Mark as unread" button changes the status (viewing never does). Status switch **All / Unread (N) / Read** (`segmented_control`, `required=True`) is combined with the category filter and keeps pinned-first/newest-first order; a subtle gray "Unread" badge marks unread cards. The toggle button sits on the left of each card's footer because the right edge is where Larry's launcher floats. Pure helpers (`filter_by_status`, `unread_count`, `toggle_read`) live in `reslink/bulletin.py`; still no connection to Larry or the AI pipeline.

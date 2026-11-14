@@ -32,7 +32,10 @@ def test_empty_catalog_shows_honest_empty_state(monkeypatch, tmp_path):
     at = run_app(monkeypatch, path)
     assert at.title[0].value == "ResLink AI"
     assert any("No verified resources have been added yet" in i.value for i in at.info)
-    assert len(at.tabs) == len(CATEGORIES)
+    # Resources section (default): category tabs in catalog order only; the Staff Bulletin is a
+    # separate top-level section (Milestone 5 navigation refinement).
+    assert at.button_group(key="nav_section").value == "Resources"
+    assert [t.label for t in at.tabs] == list(CATEGORIES.values())
     assert not at.error
 
 

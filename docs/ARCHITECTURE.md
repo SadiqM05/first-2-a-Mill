@@ -1,7 +1,6 @@
 # ResLink AI — Technical Architecture
 
-**Status:** describes the system **as implemented** through Milestone 4 (commit `8dff352` and
-later cleanup). The reasons behind each choice are in `docs/DECISIONS.md`; measured quality is
+**Status:** describes the system **as implemented** through Milestone 5 (Staff Bulletin, §8a). The reasons behind each choice are in `docs/DECISIONS.md`; measured quality is
 in `docs/EVALUATION.md`.
 
 ## 1. Overview
@@ -148,8 +147,12 @@ is picked up without a restart.
 
 ## 8. UI
 
-- **Dashboard:** one tab per category; resource cards link only to catalog URLs. Portals show
-  "sign-in required"; the manual shows "no public link · not independently verified as current".
+- **Navigation:** a compact top-level `st.segmented_control` (key `nav_section`, always one
+  selected) switches between **Resources** and **Staff Bulletin** (§8a). Only the chosen section
+  renders. Larry floats over both, and its history survives switching.
+- **Resources:** one tab per catalog category, in catalog order. Resource
+  cards link only to catalog URLs. Portals show "sign-in required"; the manual shows "no public
+  link · not independently verified as current".
 - **Larry** (`reslink/larry.py`):
   - floating launcher and panel built from keyed `st.container`s and scoped CSS
     (`.st-key-larry-*` only);
@@ -160,6 +163,48 @@ is picked up without a restart.
 - **Theme:** Streamlit's built-in System/Light/Dark menu. Larry uses `Canvas` / `currentColor`, so
   it follows the active theme. **Never** set `[theme] base` in `.streamlit/config.toml`; a test
   guards this.
+
+## 8a. Staff Bulletin (Milestone 5)
+
+A read-only announcements tab, **separate from Larry and the whole AI pipeline**.
+
+```
+data/bulletins.json -> reslink/bulletin.py (validate, search, filter, order) -> reslink/ui.render_bulletin
+```
+
+- **Data:** `{demo_data, notice, announcements[]}`.
+  - Required per item: `id`, `title`, `description`, `category` (`meetings`, `deadlines`,
+    `programming`, `general`), `published` (YYYY-MM-DD).
+  - Optional: `due` (YYYY-MM-DD) and `pinned` (bool).
+  - Validation is strict and reports every problem.
+- **Logic** (`reslink/bulletin.py`, standard library only, no Streamlit/AI imports):
+  - `search`: case-insensitive over title + description; every word must appear. (Kept and tested
+    in the module, but **not shown in the UI**: users browse or filter by category.)
+  - `filter_by_category`: an empty selection means all categories.
+  - `order`: pinned first, then newest `published` first, then title and id for ties. `due` is
+    shown but never used for sorting.
+- **UI** (`render_bulletin`, an `st.fragment`, shown when the Staff Bulletin section is selected):
+  a demo-data banner, a status switch (**All / Unread (N) / Read**), multi-select category pills
+  (no search box), and cards with Unread / Pinned / category / "Due …" badges, a
+  "Mark as read/unread" button and the posted date. It has separate empty states for a missing
+  file, an empty file, no category matches, no unread items ("all caught up"), and no read items.
+- **Read/unread:** read announcement IDs live in `st.session_state["bulletin_read_ids"]` (a set), so
+  they're per browser session only, with no persistence, database or file writes. Everything
+  starts unread, and only the button changes the status (viewing never does). The status filter
+  is applied after the category filter and ordering, so pinned-first / newest-first is kept. The
+  read set survives section switches, filter changes and Larry interactions. The filter
+  *selections* reset to their defaults after leaving and returning to the bulletin, as Streamlit
+  does for widgets that weren't rendered.
+- **Isolation:**
+  - bulletin errors render inside the Staff Bulletin section only, and Resources and Larry keep
+    working;
+  - an invalid catalog only affects the Resources section, and the bulletin still works;
+  - announcements are never indexed, embedded, retrieved or sent to Gemini;
+  - AI modules never import `reslink.bulletin`.
+
+  Tests enforce all of these.
+- **Path:** `data/bulletins.json` (override with `RESLINK_BULLETIN_PATH`). Edits apply on browser
+  refresh; no index rebuild is needed.
 
 ## 9. Safety, accuracy and privacy rules (enforced in code)
 
@@ -182,9 +227,10 @@ is picked up without a restart.
 app.py                     Streamlit entry point (wiring, caching)
 reslink/                   core package (only ui.py and larry.py import Streamlit)
   models.py config.py catalog.py ingest.py procedures.py retrieval.py
-  semantic.py assistant.py privacy.py ui.py larry.py static/larry.css
+  semantic.py assistant.py privacy.py bulletin.py ui.py larry.py static/larry.css
 scripts/                   build_index, compare_retrieval, run_eval, check_gemini
 data/resources.json        verified catalog
+data/bulletins.json        Staff Bulletin announcements (fictional demo data)
 data/documents/            public PDFs (tracked)
 data/procedures/           Front Desk Manual transcription + sidecar
 data/index/                built index and eval outputs (git-ignored)
@@ -195,5 +241,5 @@ docs/                      PRD, ARCHITECTURE, DECISIONS, EVALUATION, SOURCE_REVI
 ## 11. Out of scope (by design)
 
 Authentication/RBAC, deployment, FastAPI/React, continuous crawling, submitting forms or taking
-actions in university systems, and indexing portal contents or private data. The staff bulletin
-remains an unapproved stretch goal.
+actions in university systems, and indexing portal contents or private data. For the Staff
+Bulletin: no creation/editing UI, notifications, database, or connection to Larry/Gemini.

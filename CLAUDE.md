@@ -19,7 +19,7 @@ Help University of Tennessee FDB Hall Resident Assistants quickly locate verifie
 - **Local-first:** no deployment, AWS, FastAPI, React, TypeScript, login/RBAC, or protected university integrations.
 - **Sources:** only publicly accessible or explicitly authorized non-sensitive materials. Never invent UT resources, policies, links, procedures, steps, fees, deadlines, form fields, citations, or demo results.
 - **UI:** keep Larry's floating chatbot and Streamlit's built-in Light/Dark/System theme toggle. Never pin `[theme] base` in `.streamlit/config.toml`.
-- **Stretch only:** staff bulletin (announcements, deadlines, meeting summaries). Do **not** implement it unless the user explicitly authorizes it. Any sample announcements must be labeled as fictional demonstration content.
+- **Staff Bulletin (Milestone 5, approved and implemented):** a read-only top-level section next to Resources (`reslink/bulletin.py`, `data/bulletins.json`). It must stay **independent of Larry and the AI pipeline**: never index bulletins, send them to Gemini, or import `reslink.bulletin` from retrieval/semantic/assistant/ingest/procedures (tests enforce this). No creation/editing UI, notifications, database, or auth. The current announcements are fictional demonstration data and must stay labeled as such (`"demo_data": true`, `[Demo]` titles); never add real private staff communications.
 - **Privacy:** never ingest, request, log, or store resident personal information, confidential reports, or sensitive staff records. Never commit or print credentials.
 
 ## Working rules

@@ -1,7 +1,8 @@
 # ResLink AI — Session Handoff
 
 **Written:** 2026-11-14, at the end of the Milestone 4 session. **Refreshed:** 2026-11-14,
-after Milestone 4 was committed (`8dff352`) and after the approved repository cleanup.
+after the repository cleanup was committed (`13d2b2d`) and Milestone 5 (Staff Bulletin) was
+implemented (uncommitted).
 **Purpose:** let a fresh Claude Code session pick up without the previous conversation.
 **Sources:** facts below were checked against the repository, `git`, and a test run at the time
 of writing. Each item is marked as **done**, **uncommitted**, or **proposed**. No secrets are in
@@ -23,7 +24,9 @@ verified catalog URLs. If the evidence doesn't support an answer, it says so ins
 - Only public or explicitly approved non-sensitive sources. Never fabricate resources, URLs,
   policies, procedures, fees, deadlines or citations.
 - No resident personal information is requested, logged or stored.
-- The staff bulletin is a **stretch goal only**. It is not implemented and not approved.
+- The Staff Bulletin (the original stretch goal) was approved and implemented in Milestone 5 as a
+  **read-only** tab using fictional demo data. It is **not** connected to Larry, Gemini or
+  retrieval.
 
 **Stack.** Python 3.14.3 (`.venv`), Streamlit 1.67, `google-genai` 3.3.0 (Gemini, model from
 `GEMINI_MODEL`), ChromaDB 1.5.9 with its built-in ONNX all-MiniLM-L6-v2 embeddings (no torch),
@@ -52,8 +55,10 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 | `reslink/retrieval.py` | `KeywordRetriever` (catalog scoring + BM25-style units), `HybridRetriever` (RRF fusion), evidence text builders. |
 | `reslink/semantic.py` | ChromaDB index: build/open, fingerprint stale detection, kind-filtered search, telemetry off. |
 | `reslink/assistant.py` | Gemini prompt (rules 1–11), output parsing, citation validation, caveats, `format_steps`, notices. |
+| `reslink/bulletin.py` | Staff Bulletin: validation, category filter, pinned-first ordering (plus a `search()` helper that's tested but not shown in the UI). Standard library only, never imported by AI modules. |
+| `data/bulletins.json` | Staff Bulletin announcements: 8 **fictional demo** items, `demo_data: true`. |
 | `reslink/privacy.py` | Pattern check and redaction for obvious personal information. **Not comprehensive.** |
-| `reslink/ui.py` | Streamlit rendering: header, sidebar status, dashboard tabs, resource cards, responses. |
+| `reslink/ui.py` | Streamlit rendering: header, sidebar status, the Resources/Staff Bulletin section switch, resource category tabs, resource cards, bulletin, responses. |
 | `reslink/larry.py`, `reslink/static/larry.css` | Floating chat widget (launcher/panel, fragment, session history). CSS uses only `.st-key-larry-*` classes and theme-aware colors. |
 | `scripts/build_index.py` | Downloads catalog PDFs, writes `data/index/chunks.json`, builds the Chroma index (with procedures). |
 | `scripts/compare_retrieval.py` | Offline keyword vs hybrid metrics (`--sweep` for thresholds). |
@@ -79,8 +84,8 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 | UI: Larry floating chatbot, theme toggle restored | **Done, committed** | `a015a71` |
 | M3: hybrid retrieval (ChromaDB + RRF), stricter `sufficient` rule | **Done, committed** | `92c425e` |
 | M4: procedures knowledge base, privacy check, section citations | **Done, committed** | `8dff352` |
-| Repository cleanup (approved audit) | **Done, NOT committed** | (working tree; see §3) |
-| Staff bulletin (stretch) | Not started, not approved | — |
+| Repository cleanup (approved audit) | **Done, committed** | `13d2b2d` |
+| **M5: Staff Bulletin (read-only tab, fictional demo data)** | **Done, NOT committed** | (working tree; see §3) |
 
 **Features implemented (all done):**
 - **Catalog:** 7 verified resources. Five are portals or PDFs with checked URLs (maintenance/Asset
@@ -127,22 +132,18 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 
 ---
 
-## 3. Current repository state (refreshed after cleanup)
+## 3. Current repository state (refreshed after Milestone 5)
 
-- **Branch:** `main`. **Latest commit:** `8dff352 feat: integrate procedural knowledge into Larry`.
-  All Milestone 4 work, including `data/procedures/` and this file, is committed.
-- **Uncommitted: the approved repository cleanup** (no behavior change; tests unchanged):
-  - `reslink/assistant.py`: removed the unused `resolve_citations()`;
-  - `requirements.txt`: dropped the unused `beautifulsoup4`, Python version comment now 3.14;
-  - `.env.example`: **restored**, variable names only;
-  - `data/documents/.gitkeep`: deleted (the folder holds tracked PDFs);
-  - `.gitignore`: removed the obsolete `chroma_db/` rule, added `.claude/settings.local.json`;
-  - `AGENTS.md`: Python 3.14 target;
-  - `scripts/check_gemini.py`: refactored to use the app's settings and Gemini wrapper (1 request,
-    no hardcoded model, key never printed);
-  - `docs/ARCHITECTURE.md`: rewritten to describe the system as built;
-  - `CLAUDE.md`: first-hour sections removed, points to this file;
-  - `docs/SESSION_HANDOFF.md`: this refresh.
+- **Branch:** `main`. **Latest commit:** `13d2b2d clean up repository and update project docs`
+  (Milestone 4 = `8dff352`).
+- **Uncommitted: Milestone 5, the Staff Bulletin** (no change to AI, retrieval or procedures):
+  - new: `reslink/bulletin.py`, `data/bulletins.json`, `tests/test_bulletin.py`;
+  - modified: `app.py` (loads the bulletin; top-level Resources | Staff Bulletin switch),
+    `reslink/ui.py` (`render_section_nav`, `render_bulletin` without a search box), `reslink/config.py` (`bulletin_path`,
+    `RESLINK_BULLETIN_PATH`), `.env.example` (commented optional line), `tests/test_app.py` (tab
+    list now ends with "Staff Bulletin");
+  - docs: `README.md`, `CLAUDE.md`, `docs/ARCHITECTURE.md` (§8a), `docs/DECISIONS.md` (37–42), and
+    this file.
 - **Ignored, do NOT commit:** `.env` (contains `GEMINI_API_KEY`, `GEMINI_MODEL`), `.venv/`,
   `.pytest_cache/`, and `data/index/`. `data/index/` holds `chunks.json`, `chroma/`, and the eval
   result JSONs; all of it can be rebuilt.
@@ -156,7 +157,8 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 
 ## 4. Testing and evaluation (measured 2026-11-14)
 
-**Automated:** `pytest` → **313 passed, 4 xfailed** (about 25 s, offline, no Gemini calls). The
+**Automated:** `pytest` → **370 passed, 4 xfailed** (374 collected, about 35 s, offline, no Gemini
+calls). That's 313 before Milestone 5 plus 57 bulletin, navigation and read/unread tests. The
 4 xfails are documented known misses:
 - keyword-only: "How do I return a letter to sender?" (hybrid finds it), "What is SC Logic?";
 - hybrid: "My resident can't get into their room" (lockout portal not surfaced), "What is SC Logic?".
@@ -239,15 +241,25 @@ Every fact was checked by hand against the sources. The check-in answer came bac
 6. Take backup screenshots in case of quota or network failure. Keyword-only and "sources only"
    modes still work without Gemini.
 
-**Recommended next milestone (proposed, not approved): "M5: demo hardening and freeze".** The
-repo fixes are done; what remains:
+**Recommended next milestone (proposed, not approved): "M6: demo hardening and freeze".** The
+repo fixes and the Staff Bulletin are done; what remains:
 - a final live eval (confirms `format_steps` on live output);
 - a real-browser pass;
-- a demo script in `docs/DEMO.md` using supported scenarios;
+- a demo script in `docs/DEMO.md` using supported scenarios, plus a Staff Bulletin segment
+  (the section switch, a category filter, pinned items, due-date badges, the demo-data banner);
 - backup screenshots;
 - a rehearsal on the demo machine.
 
-Only consider the staff bulletin if the user explicitly approves it after M5.
+**Staff Bulletin limitations (known):**
+- On phones the 6 resource tabs still scroll sideways within the Resources section, a built-in
+  Streamlit behavior. The Staff Bulletin is now a top-level section, so it's always visible.
+- No search box, by design: browse or filter by category and read status.
+- Read/unread is per browser session (`st.session_state`): a refresh or a new tab starts all
+  unread again. The status and category filter selections reset after leaving the bulletin and
+  coming back; the read set itself is kept.
+- The Larry launcher floats over the bottom-right corner, as on every tab.
+- The data is fictional; real announcements would need the team to edit `data/bulletins.json`
+  (there's no editing UI, by design).
 
 ---
 
@@ -270,7 +282,7 @@ the key.** Claude should check configuration with `load_settings().gemini_config
 ```powershell
 python -m scripts.build_index        # PDFs -> chunks.json -> Chroma (+ procedures). Stop the app first.
 streamlit run app.py                 # sidebar should show: 7 resources, 46 passages, Retrieval: hybrid
-pytest                               # offline, ~25 s, expect 313 passed / 4 xfailed
+pytest                               # offline, ~35 s, expect 370 passed / 4 xfailed
 python -m scripts.compare_retrieval --sweep   # offline retrieval metrics
 python -m scripts.run_eval --live    # LIVE: 8 Gemini calls (quota). --keyword-only to compare.
 ```
@@ -300,17 +312,17 @@ Until then the sidebar shows the semantic index as **stale** and retrieval falls
 
 ## 8. Resume checklist for the next Claude Code session
 
-1. Read `CLAUDE.md`, `AGENTS.md`, this file, then `docs/DECISIONS.md` (items 1–36).
-2. Run `git status` and `git log --oneline -5`. Milestone 4 is `8dff352`. Check whether the user
-   committed the repository cleanup (expected new commit after `8dff352`). If not, **don't
-   commit**; just note it.
+1. Read `CLAUDE.md`, `AGENTS.md`, this file, then `docs/DECISIONS.md` (items 1–44).
+2. Run `git status` and `git log --oneline -5`. The cleanup is `13d2b2d`. Check whether the user
+   committed Milestone 5, the Staff Bulletin (expected new commit after `13d2b2d`). If not,
+   **don't commit**; just note it.
 3. Check the environment **without exposing secrets**:
    `python -c "from reslink.config import load_env_file, load_settings; load_env_file(); s=load_settings(); print(s.gemini_model, s.gemini_configured)"`.
-4. Run `pytest`. Expect **313 passed, 4 xfailed**; investigate any difference before doing anything
+4. Run `pytest`. Expect **370 passed, 4 xfailed**; investigate any difference before doing anything
    else.
 5. If `data/index/` is missing or the sidebar says stale, run `python -m scripts.build_index`.
 6. Ask the user:
    - Did you verify the housing.utk.edu URL?
    - Did you check the 3 flagged transcription passages?
-   - Is the M5 "demo hardening" plan approved?
-7. Before writing any code, propose the M5 steps (§5) and wait for approval.
+   - Is the M6 "demo hardening" plan approved?
+7. Before writing any code, propose the M6 steps (§5) and wait for approval.

@@ -6,6 +6,7 @@ import streamlit as st
 
 from reslink import ui
 from reslink.assistant import GeminiGenerator, answer_question
+from reslink.bulletin import BulletinError, load_bulletin
 from reslink.catalog import CatalogError, group_by_category, load_catalog
 from reslink.config import PROJECT_ROOT, load_env_file, load_settings
 from reslink.ingest import load_chunks
@@ -73,11 +74,28 @@ retriever, retrieval_status = get_retriever(
     _index_mtime(settings.chroma_path),
 )
 
+# Staff Bulletin: read-only, independent of the catalog, Larry, and the AI pipeline.
+# Any problem with its file is shown inside the bulletin only.
+try:
+    bulletin, bulletin_error = load_bulletin(settings.bulletin_path), None
+except BulletinError as error:
+    bulletin, bulletin_error = None, error
+except (OSError, UnicodeDecodeError) as error:
+    bulletin, bulletin_error = None, BulletinError([f"could not read the bulletin file ({type(error).__name__})"])
+
+
 if catalog_error is not None:
     ui.render_sidebar_status(settings, None, retrieval_status=retrieval_status)
-    ui.render_catalog_error(catalog_error)
 else:
     ui.render_sidebar_status(settings, len(resources), len(chunks), index_warnings, retrieval_status)
+
+# Two top-level sections. Each renders independently, so a broken catalog only affects
+# Resources and a broken bulletin file only affects the Staff Bulletin.
+if ui.render_section_nav() == ui.SECTION_BULLETIN:
+    ui.render_bulletin(bulletin, bulletin_error)
+elif catalog_error is not None:
+    ui.render_catalog_error(catalog_error)
+else:
     ui.render_dashboard(group_by_category(resources))
 
 generator = (

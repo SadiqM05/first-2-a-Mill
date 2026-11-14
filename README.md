@@ -4,10 +4,12 @@ VolHacks 2026 project by team First2aMill. A local Streamlit dashboard and groun
 assistant that helps UT FDB Hall RAs find verified public university resources.
 See `docs/PRD.md` and `docs/ARCHITECTURE.md`.
 
-**Status:** Milestone 4. Verified resource dashboard, Larry (floating chat assistant),
-hybrid retrieval (keyword + local ChromaDB semantic search) over catalog metadata, public PDFs,
-and a Front Desk Manual procedures transcription, with grounded Gemini answers and page/section
-citations. See `docs/EVALUATION.md` and `docs/SOURCE_REVIEW.md` (passages needing verification).
+**Status:** Milestone 5. The app has a verified resource dashboard, Larry (floating chat
+assistant), and hybrid retrieval (keyword + local ChromaDB semantic search) over catalog metadata,
+public PDFs and a Front Desk Manual procedures transcription. Larry gives grounded Gemini answers
+with page/section citations. There is also a read-only **Staff Bulletin** tab (fictional demo
+announcements, independent of Larry). See `docs/EVALUATION.md` and `docs/SOURCE_REVIEW.md`
+(passages needing verification).
 
 ## Setup (Python 3.14, tested; 3.12 is the fallback)
 
@@ -60,6 +62,22 @@ Required fields: `id`, `title`, `category` (`maintenance`, `reporting`, `program
 Optional fields: `content_type` (`webpage`, `pdf`, `form`, `portal` for sign-in-only systems, `transcription`), `description`, `keywords`.
 After adding a PDF, run `python -m scripts.build_index`.
 The app refuses to load the catalog if any entry is invalid and shows every problem it found.
+
+## Staff Bulletin
+
+Use the **Resources | Staff Bulletin** switch at the top of the page. The Staff Bulletin shows
+read-only announcements from `data/bulletins.json`. You can filter by Meetings / Deadlines /
+Programming / General and by status (**All / Unread / Read**); pinned items appear first, then
+newest first. Everything starts unread. "Mark as read" / "Mark as unread" on each card is
+remembered **only for the current browser session**; the JSON file is never changed. The bulletin is **not** connected to Larry, Gemini, or the
+retrieval index. The current announcements are **fictional demonstration data**
+(`"demo_data": true`).
+
+Each announcement needs `id`, `title`, `description`, `category`, and `published` (YYYY-MM-DD).
+`due` (YYYY-MM-DD, shown as a badge, not used for sorting) and `pinned` (true/false) are optional.
+The app validates the file strictly. A broken file shows an error inside the bulletin tab only, and
+a missing file shows a "not set up yet" message. No index rebuild is needed after editing it; just
+refresh the browser.
 
 ## Procedures (Markdown transcriptions)
 
