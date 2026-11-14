@@ -1,5 +1,5 @@
 {
-  "_comment": "Sidecar for residence_hall_front_desk_knowledge_base.md. 'related' links procedures to existing verified catalog IDs (links come only from data/resources.json). 'review' flags transcription passages for manual verification; the Markdown text itself is never corrected here.",
+  "_comment": "Sidecar for residence_hall_front_desk_knowledge_base.md. 'related' links procedures to existing verified catalog IDs (links come only from data/resources.json). 'review' flags transcription passages for manual verification; the Markdown text itself is never corrected here. 'companions' links fragments of the same procedure on different pages (retrieved together, never merged). 'safety' marks safety-critical procedures: Larry leads with escalation, shows this notice first, and never gives operating steps from them.",
   "related": {
     "Steps to Issue Access Card": ["lockout-card-access"],
     "Steps for Returned Cards": ["lockout-card-access"],
@@ -9,7 +9,9 @@
     "Excessive Lockouts — Keys": ["maintenance-request-portal"],
     "School Dude — Problem Type Reference": ["maintenance-request-portal"],
     "Sorting Paper Mail": ["starrez-roster"],
-    "Forwarding Mail": ["starrez-roster"]
+    "Forwarding Mail": ["starrez-roster"],
+    "SchoolDude Maintenance Requests": ["maintenance-request-portal"],
+    "Resident Report / Area Coverage Follow-Up (Partial Procedure)": ["incident-report-form"]
   },
   "review": {
     "Excessive Lockouts — Access Cards": [
@@ -20,6 +22,21 @@
     ],
     "Giving Recored Keys to Residents": [
       "The manual note about charging for recores appears under this procedure, although charging happens in 'Steps for Recore'. Verify its placement against the photographed page."
+    ],
+    "SchoolDude Maintenance Requests": [
+      "Page 16 shows only step 1 ('New Work Order'); 'School Dude — Problem Type Reference' (p. 18) shows steps 4–5. Steps 2–3 are missing from both transcriptions (probably on p. 17). This page spells the system 'SchoolDude'; p. 18 spells it 'School Dude'."
+    ],
+    "School Dude — Problem Type Reference": [
+      "'SchoolDude Maintenance Requests' (p. 16) shows a first work-order step ('New Work Order') that may be step 1 of this procedure; steps 2–3 are still missing. Verify against the photographed pages."
+    ]
+  },
+  "companions": {
+    "SchoolDude Maintenance Requests": ["School Dude — Problem Type Reference"],
+    "School Dude — Problem Type Reference": ["SchoolDude Maintenance Requests"]
+  },
+  "safety": {
+    "Fire Panel Response": [
+      "Emergency: follow your building's current fire procedures, your emergency training, and directions from emergency responders, and contact trained staff right away. If there is any evidence of fire (such as smoke, flames, or scorch marks), the manual says to let the alarm go into general alarm or pull a pull station so the Fire Department responds. Larry does not give fire-panel operating steps from this unverified transcription."
     ]
   }
 }

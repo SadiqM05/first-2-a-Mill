@@ -39,3 +39,17 @@ detected from the text itself (source limitations, web addresses). Each flag is 
   separate unit so it can be cited.
 - Manual page numbers (printed pages, e.g. pp. 30–32) are different from PDF citations (page
   positions in the file, e.g. page 5 of the job description PDF).
+
+## Pages 16 and 39 (merged 2026-11-14)
+
+Source: a second transcription of the same manual (photographs of pp. 16 and 39). It's merged into
+the same Markdown file; see its preamble. Text is unchanged except that sub-headings inside a
+procedure are bold lines, and "Source limitation" lines repeat that transcription's coverage notes.
+
+| Section | Issue | How it's flagged |
+|---|---|---|
+| **Fire Panel Response (p. 39)** | Contains fire-panel **operating instructions** (acknowledge within 15 s; silence then reset after a confirmed nuisance alarm) from an unverified transcription. The source itself says it doesn't replace building-specific fire procedures, emergency training, or responders' directions. | **Safety-critical** (sidecar `safety`): emergency notice shown first; Larry gives escalation only; a code guard replaces any answer containing acknowledge/silence/reset. Confirm against current official building fire procedures. |
+| SchoolDude Maintenance Requests (p. 16) | Only step 1 ("New Work Order") is visible; p. 18 has steps 4–5, so **steps 2–3 are missing** (probably p. 17). Spelled "SchoolDude" here and "School Dude" on p. 18. | Incomplete source + review flag (cross-reference) |
+| Equipment Checkout / Check-In (p. 16) | **Check-in steps aren't specified;** checkout rules vary by hall. | Incomplete source |
+| Resident Report / Area Coverage Follow-Up (p. 39) | **Starts mid-procedure;** the title and initial steps aren't supplied (likely on p. 38). | Incomplete source |
+| Public Room Reservations (p. 16) | Names **25Live**, but there's no verified link; "OA" isn't defined. | Not linked (no catalog entry) |

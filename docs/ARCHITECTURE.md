@@ -96,12 +96,26 @@ Python 3.14. No web framework, database server, authentication or cloud infrastr
    - cited IDs must be in the retrieved evidence (others are dropped);
    - no valid citation → the answer is withheld;
    - URLs written by the model are stripped;
-   - inline numbered steps are put on separate lines (formatting only).
+   - inline numbered steps are put on separate lines (formatting only);
+   - the fire-panel safety guard (below) runs next;
+   - step gaps (1 → 4) get a `*Steps 2–3 are missing from the source.*` line with blank lines
+     around it, so Markdown keeps the original numbers (answers without gaps are untouched);
+   - **partial procedures:** status `partial` (not `grounded`) when a cited unit is INCOMPLETE
+     SOURCE **and** the model set `partial` or a step gap was found. Never after the safety
+     fallback. The UI shows a fixed amber "Incomplete procedure … check current official
+     documentation or ask your headstaff" notice before the steps.
+
+   **Companion fragments:** the sidecar key `companions` links units that are fragments of one
+   procedure on different pages (SchoolDude p. 16 ↔ p. 18). Retrieving one adds the other as separate
+   evidence, labeled "OTHER FRAGMENT OF THE SAME PROCEDURE". They are never merged.
 7. **Response:** answer, citations, and resources (cited ones plus the procedures' related catalog
    resources). Typed `Note`s are added by code:
    - `unverified` (transcription not verified as current) and `unverified_link` (an unverified web
      address is mentioned) render as compact notes;
-   - `incomplete` and `review` (a possible transcription error) render as one prominent warning.
+   - `incomplete` and `review` (a possible transcription error) render as one prominent warning;
+   - `safety` (a safety-critical procedure, e.g. Fire Panel Response) renders **first**, as a red
+     emergency notice. If any retrieved safety evidence exists and the answer mentions panel
+     operation (acknowledge/silence/reset), code replaces it with an escalation-only message.
 
    **Chat layout** (`ui.render_response`, Larry only): answer → **Verified links**
    (portal/form/webpage buttons, "· sign-in", description as tooltip) → one compact **Sources**
@@ -129,7 +143,8 @@ Python 3.14. No web framework, database server, authentication or cloud infrastr
 - Group intro text becomes "Group — Overview"; a group with no `###` becomes one unit.
 - `**Source limitation:**` marks a unit incomplete; web addresses are flagged and hidden from
   evidence.
-- The sidecar `.meta.json` has `related` (catalog IDs) and `review` (flags).
+- The sidecar `.meta.json` has `related` (catalog IDs), `review` (flags), and `safety`
+  (safety-critical units: emergency notice text; evidence labeled `SAFETY-CRITICAL`).
 
 **Models** (`reslink/models.py`):
 - `Resource`

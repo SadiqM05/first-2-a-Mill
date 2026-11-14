@@ -93,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
             for c in response.citations
         ]
         want = targets(case)
-        if response.status.value == "grounded":
+        if response.status.value in ("grounded", "partial"):
             on_target = bool(set(cites) & want)
             off_target = [c for c in cites if c not in want]
             citation_ok = on_target if want else False  # grounded on an unsupported question = bad
@@ -109,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
                           f"{'OK' if complete else 'INCOMPLETE'}")
             citation_ok = citation_ok and complete
         for key in ("expected_caveat", "expected_caveat_any"):
-            if case.get(key) and response.status.value == "grounded":
+            if case.get(key) and response.status.value in ("grounded", "partial"):
                 has = any(case[key] in c.text for c in response.caveats)
                 checks.append(f"caveat '{case[key]}' {'present' if has else 'MISSING'}")
                 citation_ok = citation_ok and has
@@ -118,6 +118,10 @@ def main(argv: list[str] | None = None) -> int:
             has = any(s.lower() in text for s in case["must_include_any"])
             checks.append(f"includes one of {case['must_include_any']}: {'OK' if has else 'MISSING'}")
             citation_ok = citation_ok and has
+        if case.get("must_include_all") and response.answer:
+            lacking = [s for s in case["must_include_all"] if s.lower() not in text]
+            checks.append(f"includes all of {case['must_include_all']}: {'OK' if not lacking else f'MISSING {lacking}'}")
+            citation_ok = citation_ok and not lacking
         if case.get("must_not_include") and response.answer:
             found = [s for s in case["must_not_include"] if s.lower() in text]
             checks.append(f"must not include {case['must_not_include']}: {'OK' if not found else f'FOUND {found}'}")

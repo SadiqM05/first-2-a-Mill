@@ -72,12 +72,18 @@ def procedure_evidence_text(resource: Resource, chunk: Chunk, body: str) -> str:
     """
     lines = [f"Source: {resource.title}, § {chunk.section}, {page_label(chunk.page, chunk.page_end)}"
              + (f" (group: {chunk.group})" if chunk.group and chunk.group != chunk.section else "")]
+    if chunk.safety:
+        lines.append(f"SAFETY-CRITICAL: {chunk.safety}")
     if resource.is_transcription:
         lines.append("Source status: transcription of photographed manual pages; not independently verified as current.")
     if chunk.incomplete:
         lines.append(f"INCOMPLETE SOURCE: {chunk.incomplete}")
     for note in chunk.review:
         lines.append(f"FLAGGED FOR REVIEW: {note}")
+    if chunk.companions:  # sidecar "companions": the same procedure continues in another unit
+        others = "; ".join(f"§ {title}" for title in chunk.companions)
+        lines.append(f"OTHER FRAGMENT OF THE SAME PROCEDURE: {others}. Use the documented steps from "
+                     "each fragment with their original numbers and page, and mark the missing steps between them.")
     lines.append(neutralize_urls(body))
     return "\n".join(lines)
 
@@ -117,6 +123,7 @@ class KeywordRetriever:
         # Procedure headings are searchable too ("recore", "checking in packages").
         self._chunk_tokens = [set(tokenize(f"{c.section or ''} {c.text}")) for c in self.chunks]
         self._chunk_lookup = {(c.resource_id, c.page, c.chunk_index): c for c in self.chunks}
+        self._section_lookup = {(c.resource_id, c.section): c for c in self.chunks if c.section}
         n = len(self.chunks)
         df: dict[str, int] = {}
         for tokens in self._chunk_tokens:
@@ -205,12 +212,31 @@ class KeywordRetriever:
         return Evidence(
             resource, procedure_evidence_text(resource, first, body), score, page=first.page,
             source="document", section=first.section, page_end=first.page_end,
-            incomplete=first.incomplete, review=first.review,
+            incomplete=first.incomplete, review=first.review, safety=first.safety,
             related=tuple(self._by_id[r] for r in first.related if r in self._by_id),
         )
 
     def retrieve_documents(self, query: str, top_k: int = 3) -> list[Evidence]:
-        return [self.page_evidence(group, score) for _, score, group in self.rank_pages(query)[:top_k]]
+        return self.with_companions(
+            [self.page_evidence(group, score) for _, score, group in self.rank_pages(query)[:top_k]]
+        )
+
+    def with_companions(self, evidence: list[Evidence]) -> list[Evidence]:
+        """Append other fragments of the same procedure (sidecar "companions"), e.g. SchoolDude
+        step 1 on p. 16 and steps 4-5 on p. 18. Each stays its own evidence block with its own
+        citation; fragments are never merged into one procedure."""
+        out, present = list(evidence), {e.evidence_id for e in evidence}
+        for e in evidence:
+            chunk = self._section_lookup.get((e.resource.id, e.section)) if e.section else None
+            for other in chunk.companions if chunk else ():
+                companion = self._section_lookup.get((e.resource.id, other))
+                if companion is None:
+                    continue
+                extra = self.page_evidence([companion], 0.0)
+                if extra.evidence_id not in present:
+                    present.add(extra.evidence_id)
+                    out.append(extra)
+        return out
 
     def retrieve(self, query: str, top_k: int = 3) -> list[Evidence]:
         return self.retrieve_catalog(query, top_k) + self.retrieve_documents(query, top_k)
@@ -332,4 +358,4 @@ class HybridRetriever:
             self.keyword.page_evidence(page_chunks[key], score)
             for key, score in rrf_fuse([[k for k, _, _ in kw_pages], sem_pages])[: self.doc_top_k]
         ]
-        return catalog + documents
+        return catalog + self.keyword.with_companions(documents)

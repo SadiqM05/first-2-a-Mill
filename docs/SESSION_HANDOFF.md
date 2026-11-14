@@ -86,7 +86,8 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 | M4: procedures knowledge base, privacy check, section citations | **Done, committed** | `8dff352` |
 | Repository cleanup (approved audit) | **Done, committed** | `13d2b2d` |
 | M5: Staff Bulletin (read-only section, read/unread, fictional demo data) | **Done, committed** | `a273979` |
-| **M6: Larry response quality (format, follow-ups, forms vs portals)** | **Done, NOT committed** | (working tree; see §3) |
+| M6: Larry response quality (format, follow-ups, forms vs portals) | **Done, committed** | `6316cb6` |
+| **Knowledge base: eRezLife portal; manual pages 16 and 39 (24 units, Fire Panel safety-critical)** | **Done, NOT committed** | (working tree) |
 
 **Features implemented (all done):**
 - **Catalog:** 7 verified resources. Five are portals or PDFs with checked URLs (maintenance/Asset
@@ -162,8 +163,8 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 
 ## 4. Testing and evaluation (measured 2026-11-14)
 
-**Automated:** `pytest` → **404 passed, 4 xfailed** (408 collected, about 37 s, offline, no Gemini
-calls). That includes the Milestone 5 bulletin tests and 30 Milestone 6 response-quality tests
+**Automated:** `pytest` → **523 passed, 4 xfailed** (527 collected, about 45 s, offline, no Gemini
+calls). That includes the 25 partial-procedure tests (`tests/test_partial_procedures.py`), the Milestone 5 bulletin tests and 30 Milestone 6 response-quality tests
 (`tests/test_response_quality.py`). The
 4 xfails are documented known misses:
 - keyword-only: "How do I return a letter to sender?" (hybrid finds it), "What is SC Logic?";
@@ -288,7 +289,7 @@ the key.** Claude should check configuration with `load_settings().gemini_config
 ```powershell
 python -m scripts.build_index        # PDFs -> chunks.json -> Chroma (+ procedures). Stop the app first.
 streamlit run app.py                 # sidebar should show: 7 resources, 46 passages, Retrieval: hybrid
-pytest                               # offline, ~37 s, expect 404 passed / 4 xfailed
+pytest                               # offline, ~41 s, expect 523 passed / 4 xfailed
 python -m scripts.compare_retrieval --sweep   # offline retrieval metrics
 python -m scripts.run_eval --live    # LIVE: 8 Gemini calls (quota). --keyword-only to compare.
 ```
@@ -318,13 +319,13 @@ Until then the sidebar shows the semantic index as **stale** and retrieval falls
 
 ## 8. Resume checklist for the next Claude Code session
 
-1. Read `CLAUDE.md`, `AGENTS.md`, this file, then `docs/DECISIONS.md` (items 1–48).
+1. Read `CLAUDE.md`, `AGENTS.md`, this file, then `docs/DECISIONS.md` (items 1–51).
 2. Run `git status` and `git log --oneline -5`. The cleanup is `13d2b2d`. Check whether the user
    committed Milestone 5, the Staff Bulletin (expected new commit after `13d2b2d`). If not,
    **don't commit**; just note it.
 3. Check the environment **without exposing secrets**:
    `python -c "from reslink.config import load_env_file, load_settings; load_env_file(); s=load_settings(); print(s.gemini_model, s.gemini_configured)"`.
-4. Run `pytest`. Expect **404 passed, 4 xfailed**; investigate any difference before doing anything
+4. Run `pytest`. Expect **523 passed, 4 xfailed**; investigate any difference before doing anything
    else.
 5. If `data/index/` is missing or the sidebar says stale, run `python -m scripts.build_index`.
 6. Ask the user:

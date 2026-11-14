@@ -227,7 +227,8 @@ def render_bulletin(bulletin: Bulletin | None, error: BulletinError | None = Non
 
 # --- Larry chat response (compact; the dashboard keeps its full resource cards) ------------------
 
-ACTION_LINK_TYPES = ("portal", "form", "webpage")  # things an RA opens to *do* something
+ACTION_LINK_TYPES = ("portal", "form", "webpage")
+ANSWERED = (Status.GROUNDED, Status.PARTIAL)  # things an RA opens to *do* something
 
 
 def _action_links(response: AssistantResponse) -> list[Resource]:
@@ -237,7 +238,7 @@ def _action_links(response: AssistantResponse) -> list[Resource]:
 def _source_parts(response: AssistantResponse, linked_ids: set[str]) -> list[str]:
     """Compact, de-duplicated source labels. PDF pages link to the page (catalog URL + #page)."""
     parts: list[str] = []
-    if response.status is Status.GROUNDED:
+    if response.status in ANSWERED:
         for c in response.citations:
             if c.resource.id in linked_ids and c.page is None and not c.section:
                 continue  # already shown as a verified link; don't repeat it as a source
@@ -257,9 +258,15 @@ def render_response(response: AssistantResponse) -> None:
     -> compact notes -> one consolidated warning (incomplete or possibly incorrect instructions).
 
     Links come only from response.resources (catalog entries); nothing here is model-written.
+    Safety-critical notices (e.g. fire alarms) come FIRST, above everything else.
     """
+    for note in response.caveats:
+        if note.kind == "safety":
+            st.error(note.text, icon=":material/emergency:")
     if response.notice:
-        if response.status is Status.ERROR:
+        if response.status is Status.PARTIAL:
+            st.warning(response.notice, icon=":material/rule:")  # incomplete procedure
+        elif response.status is Status.ERROR:
             st.warning(response.notice)
         else:
             st.info(response.notice)
@@ -268,7 +275,7 @@ def render_response(response: AssistantResponse) -> None:
 
     links = _action_links(response)
     if links:
-        st.caption("Verified links" if response.status is Status.GROUNDED else "Related verified links")
+        st.caption("Verified links" if response.status in ANSWERED else "Related verified links")
         with st.container(horizontal=True):
             for r in links:
                 label = f"{r.title} · sign-in" if r.requires_login else r.title
@@ -277,12 +284,12 @@ def render_response(response: AssistantResponse) -> None:
 
     sources = _source_parts(response, {r.id for r in links})
     if sources:
-        heading = "Sources" if response.status is Status.GROUNDED else "Related sources"
+        heading = "Sources" if response.status in ANSWERED else "Related sources"
         st.caption(f"{heading}: " + " · ".join(sources))
 
     for note in response.caveats:
         if not note.prominent:
             st.caption(f"Note: {note.text}")
-    prominent = [n.text for n in response.caveats if n.prominent]
+    prominent = [n.text for n in response.caveats if n.prominent and n.kind != "safety"]
     if prominent:
         st.warning("\n".join(f"- {text}" for text in prominent), icon=":material/warning:")

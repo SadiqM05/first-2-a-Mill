@@ -61,7 +61,7 @@ def test_expected_statuses_are_valid():
 
 def test_live_subset_is_small():
     # Gemini quota budget; privacy-blocked questions make no API call.
-    for tag in ("live", "live_m6", "live_erez"):
+    for tag in ("live", "live_m6", "live_erez", "live_kb2", "live_partial"):
         assert sum(1 for c in ALL_CASES if c.get(tag) and not c.get("privacy")) <= 8, tag
 
 
@@ -160,9 +160,8 @@ def test_hybrid_never_loses_a_keyword_hit(case):
     kw = RETRIEVER.retrieve(case["question"])
     hy = _hybrid().retrieve(case["question"])
     kw_found = {e.evidence_id for e in kw} & targets(case)
-    hy_ids = {e.evidence_id for e in hy if e.source == "catalog"} | {
-        e.evidence_id for e in [x for x in hy if x.source == "document"][:3]
-    }
+    # Top 3 ranked pages plus any companion fragments appended after them (both reach Gemini).
+    hy_ids = {e.evidence_id for e in hy}
     assert kw_found <= hy_ids, f"hybrid dropped {kw_found - hy_ids}"
 
 

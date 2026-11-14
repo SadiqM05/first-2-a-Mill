@@ -86,6 +86,7 @@ These are named in the sources, but ResLink has no verified link for them.
 |---|---|---|---|---|
 | Housing IT page → "Card Access Resources" → "Lockout Cards" | Manual: Issue Access Card (step 5), Returned Cards (step 1), Lost Card (step 1) | Webpage / portal path | `https://housing.utk.edu/information-technology/` (text only) | **Unverified.** HTTP 403 (Cloudflare) to automated checks. Never linked. |
 | SC Logic (Intra Desktop Client) | Manual: Mail overview and package procedures | Desktop software on the post office computer | — | **Missing.** Not a web resource. Hall-specific credentials, which must never be stored. |
+| 25Live | Manual p. 16: Public Room Reservations | Room reservation system | — | **Missing** (no verified link) |
 | "School Dude" | Manual (lockouts, recores, p. 18); Job Description p. 4 ("SchoolDude") | Work-order system | — (assumed to be the Maintenance Request Portal) | **Inferred mapping; confirm it.** |
 | StarRez (mail lookups) | Manual: Sorting Paper Mail, Forwarding Mail | Login portal | — (assumed to be the StarRez roster URL) | **Entry point unverified.** |
 | Hilltopics (student handbook) | Housing Policies p. 6; Job Description p. 3 | Reference document | — | **Missing** |
@@ -122,7 +123,7 @@ There's **no online version** of any of these in ResLink. They're physical items
 | Resources with a URL | 7 | All 7 are **Verified (reachable)** (six checked 2026-11-13, eRezLife 2026-11-14) |
 | Missing URL | 1 | Front Desk Residence Hall Manual (no public link, by design) |
 | Unverified URLs referenced in sources | 1 | `housing.utk.edu/information-technology/` (not in the catalog) |
-| Referenced but not cataloged (no URL) | 10 | See the table above |
+| Referenced but not cataloged (no URL) | 11 | See the table above (25Live added) |
 | Require a sign-in | **5** | Maintenance Portal, Maxient Incident Form, Lockout Card Access, StarRez, eRezLife |
 | Need review | **3** | Front Desk Manual (flags, incomplete units, currency); both PDFs (currency: 2023 file, 2024 upload) |
 | Inferred mappings to confirm | 2 | School Dude → Maintenance Portal; StarRez mail lookups → roster URL |
@@ -131,8 +132,10 @@ There's **no online version** of any of these in ResLink. They're physical items
 
 ## 2. Existing Procedures
 
-The knowledge base is `data/procedures/residence_hall_front_desk_knowledge_base.md`: **18 units in 4
-sections** (16 procedures, 1 overview, 1 reference table). Each unit is retrieved whole.
+The knowledge base is `data/procedures/residence_hall_front_desk_knowledge_base.md`: **24 units** from
+manual pages 16, 18, 24–32 and 39 (22 procedures, 1 overview, 1 reference table). Each unit is
+retrieved whole. The 6 units from pages 16 and 39 were merged on 2026-11-14; see "Added from pages 16
+and 39" below.
 
 **Page numbers** are the printed manual pages. A procedure inherits its `##` group's range, so
 citations aren't page-precise. **Every** unit carries the note "not independently verified as
@@ -652,6 +655,201 @@ The visible continuation of the procedure on page 18 is:
 **Source limitation:** Steps 1–3 of this page-18 procedure were not supplied.
 
 
+### Added from pages 16 and 39 (merged 2026-11-14)
+
+Six procedures from a second transcription of the same manual. Sub-headings inside a procedure are bold lines, and "Source limitation" lines repeat that transcription's own coverage notes. Its Quick Reference table wasn't merged (it duplicates these steps).
+
+### Front desk services and maintenance (p. 16)
+
+#### Equipment Checkout / Check-In
+
+| Field | Details |
+|---|---|
+| Purpose | Lend front desk items (kitchen supplies, games, ping pong, billiards, cleaning supplies, sports equipment) using the hall's own checkout process. |
+| When an RA uses it | A resident asks to borrow equipment from the desk. |
+| Source | Front Desk Residence Hall Manual (transcription: `data/procedures/residence_hall_front_desk_knowledge_base.md`; pages 16 and 39 merged 2026-11-14) |
+| Pages / section | Manual p. 16; evidence ID `front-desk-manual#equipment-checkout-check-in` |
+| Related forms / portals / links | **Paper/physical:** "the appropriate binder" (may hold a resident's ID while an item is out)<br>No online resource |
+| Completeness | **Incomplete** |
+| Warnings / flags | **Not independently verified as current** (whole transcription).<br>**Incomplete source:** The photographed page does not specify check-in steps. |
+| Missing information | **Check-in steps are not specified** (source limitation).<br>Each hall's checkout rules and item list ("may vary by hall").<br>Whether taking an ID is required ("may include"). |
+
+**Documented steps (verbatim from the transcription; not edited):**
+
+Front desks may lend residents items including:
+
+- Kitchen supplies (baking pans, pots and pans, utensils, etc.).
+- Games.
+- Ping pong supplies.
+- Billiard supplies.
+- Cleaning supplies (vacuums, mops, brooms, etc.).
+- Sports equipment.
+
+**Procedure**
+
+1. Identify the specific front desk's checkout process; available items and rules may vary by hall.
+2. Follow that desk's required checkout procedures. These **may include taking an ID** and placing it in the appropriate binder while the resident has the item.
+3. Follow the hall's established check-in procedure when the item is returned. **The photographed page does not specify check-in steps.**
+
+**Source:** p. 16, “Equipment Checkout/in.”
+
+**Source limitation:** The photographed page does not specify check-in steps.
+
+#### Public Room Reservations
+
+| Field | Details |
+|---|---|
+| Purpose | Route public room reservation requests, changes, and creation through 25Live; the Hall Director is updated; the OA may help with key checkout. |
+| When an RA uses it | Someone asks to reserve a public room in the hall. |
+| Source | Front Desk Residence Hall Manual (transcription: `data/procedures/residence_hall_front_desk_knowledge_base.md`; pages 16 and 39 merged 2026-11-14) |
+| Pages / section | Manual p. 16; evidence ID `front-desk-manual#public-room-reservations` |
+| Related forms / portals / links | **25Live:** no verified link in ResLink<br>**Key checkout:** "the applicable key checkout process" (not documented) |
+| Completeness | Complete in transcription (visible page) |
+| Warnings / flags | **Not independently verified as current** (whole transcription). |
+| Missing information | A verified 25Live link.<br>Which halls have reservable public rooms.<br>The key checkout process for public rooms.<br>Who the "OA" is (role not defined in the knowledge base). |
+
+**Documented steps (verbatim from the transcription; not edited):**
+
+- All room reservations are **requested, modified, and created using 25Live**.
+- The building **Hall Director** is updated on reservations made through 25Live.
+- Depending on access arrangements for public rooms, the **OA** may need to help check out keys.
+
+**Front Desk Procedure**
+
+1. Ask whether the residence hall has public rooms available for reservation.
+2. Use the **25Live** process for reservation requests, changes, and creation.
+3. Determine whether the OA must assist with key checkout based on how access to the room is granted.
+4. Ensure the applicable key checkout process is followed correctly.
+
+**Source:** p. 16, “Public Room Reservations.”
+
+#### Lobby Advertisements
+
+| Field | Details |
+|---|---|
+| Purpose | Where outside groups may advertise (designated lobby board), who approves mailbox/floor flyers (Director of Residence Life), and parking garage signage (Parking Services; Communication and Customer Services Manager approves). |
+| When an RA uses it | A student organization, business, or restaurant wants to advertise or distribute flyers. |
+| Source | Front Desk Residence Hall Manual (transcription: `data/procedures/residence_hall_front_desk_knowledge_base.md`; pages 16 and 39 merged 2026-11-14) |
+| Pages / section | Manual p. 16; evidence ID `front-desk-manual#lobby-advertisements` |
+| Related forms / portals / links | No online resource; contacts are roles only (no contact details supplied) |
+| Completeness | Complete in transcription (visible page) |
+| Warnings / flags | **Not independently verified as current** (whole transcription). |
+| Missing information | Where the designated public board is in each hall.<br>Contact details for the Director of Residence Life / Parking Services (not supplied). |
+
+**Documented steps (verbatim from the transcription; not edited):**
+
+**Designated Public Board**
+
+1. Student organizations, community businesses, and local restaurants may advertise on a **designated public board** in the lobby.
+2. Know where menus and flyers are permitted in your hall lobby.
+
+**Mailboxes or Floor Posting**
+
+1. If someone wants flyers placed in **student mailboxes** or posted on **floors**, direct them to the **Director of Residence Life**.
+2. The Director of Residence Life determines whether distribution is approved.
+
+**Parking Garage Signage**
+
+- In buildings with a parking garage, signage is managed through **Parking Services** and requires approval by the **Communication and Customer Services Manager**.
+
+**Source:** p. 16, “Lobby Advertisements.”
+
+#### SchoolDude Maintenance Requests
+
+| Field | Details |
+|---|---|
+| Purpose | All maintenance requests (emergency and regular) go into the SchoolDude database; only the first submission step is visible. |
+| When an RA uses it | Any maintenance issue needs a work order. |
+| Source | Front Desk Residence Hall Manual (transcription: `data/procedures/residence_hall_front_desk_knowledge_base.md`; pages 16 and 39 merged 2026-11-14) |
+| Pages / section | Manual p. 16; evidence ID `front-desk-manual#schooldude-maintenance-requests` |
+| Related forms / portals / links | Maintenance Request Portal (catalog `maintenance-request-portal`) — *assumed to be "SchoolDude"; see Section 5* |
+| Completeness | **Incomplete** |
+| Warnings / flags | **Not independently verified as current** (whole transcription).<br>**Incomplete source:** Page 16 ends after the first work-order submission step.<br>**Review flag:** Page 16 shows only step 1 ('New Work Order'); 'School Dude — Problem Type Reference' (p. 18) shows steps 4–5. Steps 2–3 are missing from both transcriptions (probably on p. 17). This page spells the system 'SchoolDude'; p. 18 spells it 'School Dude'. |
+| Missing information | **Steps 2–3** of work-order submission (p. 16 shows step 1; p. 18 shows steps 4–5). Linked to p. 18 as a sidecar `companion`, so Larry answers with step 1 and steps 4–5 (status `partial`, both pages cited) and marks steps 2–3 missing (DECISIONS 52–54).<br>How emergency maintenance differs from regular (both go into SchoolDude; any urgent contact path isn't documented). |
+
+**Documented steps (verbatim from the transcription; not edited):**
+
+- **All maintenance requests**, both **emergency** and **regular**, must be entered into the **SchoolDude database**.
+
+**Submitting a Work Order (Visible Step Only)**
+
+1. Click the **“New Work Order”** tab at the top.
+
+> **Incomplete procedure:** The remaining work-order submission steps are not visible in the provided photograph. Consult the next manual page or the applicable local instructions before submitting a request.
+
+**Source:** p. 16, “SchoolDude Maintenance Requests” and “Submitting a Work Order.”
+
+**Source limitation:** Page 16 ends after the first work-order submission step.
+
+### Resident reports and fire panel (p. 39)
+
+#### Resident Report / Area Coverage Follow-Up (Partial Procedure)
+
+| Field | Details |
+|---|---|
+| Purpose | What to do while waiting for and after area coverage/headstaff arrive in response to a resident report; when UTPD is called and when an Incident Report may be written. |
+| When an RA uses it | A resident report requires area coverage/headstaff to respond (the type of report is on the missing earlier page). |
+| Source | Front Desk Residence Hall Manual (transcription: `data/procedures/residence_hall_front_desk_knowledge_base.md`; pages 16 and 39 merged 2026-11-14) |
+| Pages / section | Manual p. 39; evidence ID `front-desk-manual#resident-report-area-coverage-follow-up-partial-procedure` |
+| Related forms / portals / links | Incident Report Form (Maxient) (catalog `incident-report-form`): the procedure says you may write an Incident Report<br>Contacts by role only: headstaff, area coverage, UTPD (no numbers supplied) |
+| Completeness | **Incomplete** |
+| Warnings / flags | **Not independently verified as current** (whole transcription).<br>**Incomplete source:** Page 39 starts mid-procedure; its title and initial steps are not supplied. |
+| Missing information | **The beginning of the procedure** (title and initial steps; p. 39 starts mid-procedure).<br>What kind of resident report this covers.<br>Contact methods for area coverage/headstaff (not supplied). |
+
+**Documented steps (verbatim from the transcription; not edited):**
+
+> **Note:** The beginning of this procedure is not visible in the supplied image. Follow the steps below only in the context of the full procedure.
+
+- **Do not give the room number to headstaff.**
+- Wait on the floor for headstaff to arrive. If residents exit the room, explain the situation and ask them to wait.
+
+**When Area Coverage Arrives**
+
+1. **If area coverage and staff pinpoint the same room:**
+   - Headstaff will call **UTPD**.
+   - Depending on the outcome, you will write an **Incident Report**. Headstaff will let you know.
+2. **If they do not pinpoint the same room:**
+   - You do not need to do anything.
+3. **If a resident reports a specific room or resident:**
+   - Call **area coverage or headstaff** to ask how to proceed.
+
+**Source:** p. 39, top section.
+
+**Source limitation:** Page 39 starts mid-procedure; its title and initial steps are not supplied.
+
+#### Fire Panel Response
+
+| Field | Details |
+|---|---|
+| Purpose | Manual instructions for responding to the front desk fire panel: acknowledge, investigation within 3 minutes, nuisance vs. evidence of fire, Call Center information, general alarm. |
+| When an RA uses it | The fire panel activates at the desk. |
+| Source | Front Desk Residence Hall Manual (transcription: `data/procedures/residence_hall_front_desk_knowledge_base.md`; pages 16 and 39 merged 2026-11-14) |
+| Pages / section | Manual p. 39; evidence ID `front-desk-manual#fire-panel-response` |
+| Related forms / portals / links | No online resource. Contacts by role only: maintenance/housekeeping (radio, 8 a.m.–5 p.m.), RA On-Hall (5 p.m.–8 a.m.), Call Center, Fire Department, UTPD |
+| Completeness | Complete in transcription (visible page) |
+| Warnings / flags | **Not independently verified as current** (whole transcription).<br>**SAFETY-CRITICAL:** Larry shows an emergency notice first, leads with escalation, and never gives the panel operating steps (a code guard replaces any answer that does). |
+| Missing information | Current, building-specific fire procedures and training (this transcription is not a substitute).<br>Contact numbers/radio channels (not supplied). |
+
+**Documented steps (verbatim from the transcription; not edited):**
+
+1. Press the fire panel **“acknowledge”** button **within 15 seconds**.
+2. Have someone investigate (e.g., headstaff, an RA, housekeeping, or maintenance). They have **3 minutes** to investigate.
+   - **8:00 a.m.–5:00 p.m.:** Radio maintenance/housekeeping.
+   - **5:00 p.m.–8:00 a.m.:** Call the RA On-Hall.
+3. The investigator confirms or denies whether it is a **nuisance alarm**. Examples given include vaping/smoking, cooking smoke, and shower steam—conditions that are not a fire or smoke from a fire.
+   - **Confirmed nuisance alarm:** Once the investigator confirms it is a nuisance alarm and communicates that it is okay to do so, press **“silence”** and then **“reset.”**
+   - **Not a nuisance alarm / evidence of fire** (such as smoke, flames, or scorch marks): Allow the alarm to go into **general alarm**, or pull a pull station so the **Fire Department** responds.
+4. Be ready for the **Call Center** to contact you for information. Know:
+   - What caused the alarm.
+   - Who investigated.
+   - Your name and position.
+   - The room number/location where it happened.
+5. **If the building enters general alarm** (e.g., strobe lights activate or alarms sound on all floors): Press **“acknowledge”** and wait for the **Fire Department and UTPD** to arrive.
+
+> **Important:** This section reproduces the pictured manual's instructions; it does not replace current building-specific fire procedures, emergency training, or directions from emergency responders. Do not treat an unverified alarm as a nuisance alarm.
+
+**Source:** p. 39, “Fire Panel Response.”
+
 ### Procedural content inside the PDF sources
 
 These passages aren't Markdown procedures, but Larry can retrieve them as evidence. The text below is
@@ -707,16 +905,21 @@ administrative tasks, but **no source says how or where to submit them.**
 
 ### Procedure Completeness Summary
 
-| Section | Units | Complete in transcription | Incomplete | Review-flagged (content) | Unverified URL in steps |
-|---|---|---|---|---|---|
-| Lockout Card Procedures (pp. 24–26) | 4 | 4 | 0 | 1 (Excessive Lockouts — Access Cards) | 3 (Issue, Returned, Lost) |
-| Key Procedures (pp. 27–29) | 5 | 5 | 0 | 2 (Giving Recored Keys; Excessive Lockouts — Keys) | 0 |
-| Mail & Delivery Processing (pp. 30–32) | 8 | 7 | 1 (Return to Sender) | 0 | 0 |
-| School Dude — Problem Type Reference (p. 18) | 1 | 0 | 1 (steps 1–3 missing) | 0 | 0 |
-| **Total** | **18** | **16** | **2** | **3** | **3** |
+| Section | Units | Complete in transcription | Incomplete | Review-flagged (content) | Unverified URL in steps | Safety-critical |
+|---|---|---|---|---|---|---|
+| Lockout Card Procedures (pp. 24–26) | 4 | 4 | 0 | 1 (Excessive Lockouts — Access Cards) | 3 (Issue, Returned, Lost) | 0 |
+| Key Procedures (pp. 27–29) | 5 | 5 | 0 | 2 (Giving Recored Keys; Excessive Lockouts — Keys) | 0 | 0 |
+| Mail & Delivery Processing (pp. 30–32) | 8 | 7 | 1 (Return to Sender) | 0 | 0 | 0 |
+| School Dude — Problem Type Reference (p. 18) | 1 | 0 | 1 (steps 1–3 missing) | 1 (cross-reference to p. 16) | 0 | 0 |
+| Page 16 (Equipment, Public Rooms, Lobby Ads, SchoolDude) | 4 | 2 | 2 (Equipment check-in steps; SchoolDude steps after step 1) | 1 (SchoolDude: steps 2–3 missing across pp. 16/18) | 0 | 0 |
+| Page 39 (Resident Report, Fire Panel) | 2 | 1 | 1 (Resident Report: beginning missing) | 0 | 0 | 1 (Fire Panel Response) |
+| **Total** | **24** | **19** | **5** | **5** | **3** | **1** |
 
-There are **8 distinct units** with at least one incomplete marker, review flag or unverified URL.
-All 18 are *not verified as current*.
+There are **12 distinct units** with at least one incomplete marker, review flag, unverified URL, or
+safety-critical marker. All 24 are *not verified as current*.
+
+**Work-order steps across pages:** step 1 ("New Work Order") is on p. 16 and steps 4–5 are on p. 18,
+so **steps 2–3 are missing** (probably p. 17).
 
 ---
 
@@ -727,14 +930,14 @@ eRezLife moved Programming from Missing to Partial (a portal exists, but no proc
 
 | Area | Existing resources | Existing procedures / evidence | Coverage | Specific information still needed | Recommended next action |
 |---|---|---|---|---|---|
-| **Front desk operations** | Front Desk Manual; eRezLife (daily logs are submitted there) | Manual: packages, mail, lockouts, keys. Job Description: 6 h/week at the desk (p. 5); On-Hall Duty/Desk and Work Environment rules (p. 4) | **Partial** | Opening/closing a shift, what goes in a daily log (the portal is known, the content isn't), phone/radio handling, desk emergencies, guest sign-in (if any), post office hours per hall, SC Logic setup | Get the rest of the Front Desk Manual (pages beyond 18 and 24–32) and transcribe it in the same format |
+| **Front desk operations** | Front Desk Manual; eRezLife (daily logs are submitted there) | Manual: packages, mail, lockouts, keys, **equipment checkout (p. 16), public room reservations via 25Live (p. 16), lobby advertisements (p. 16), fire panel response (p. 39, safety-critical)**. Job Description: 6 h/week at the desk (p. 5); On-Hall Duty/Desk and Work Environment rules (p. 4) | **Partial** | Opening/closing a shift, what goes in a daily log, equipment **check-in** steps, a verified 25Live link, public room key checkout, phone/radio handling, guest sign-in (if any), post office hours per hall, SC Logic setup | Get the remaining manual pages (e.g. 17, 33–38, and beyond) and transcribe them in the same format |
 | **Lockouts and access cards** | Lockout Card Access portal; Housing Policies pp. 4–5 | 9 manual procedures (4 card, 5 key); policy text on lockout keys | **Partial** (most substantial area) | Verify the Housing IT URL; resolve the photo-ID vs NetID/birthday/phone discrepancy; check the 3 review flags; how to look up a resident's lockout count; which halls use keys vs cards | Verify the URL in a browser; check the flags against the photos; ask headstaff about the ID requirement |
 | **Packages and mail** | (none; SC Logic has no link); StarRez for lookups | 8 manual units (overview, check-in, check-out, no-barcode, logs, sorting, forwarding, RTS) | **Partial** | The rest of Return to Sender; handling of perishable, oversized and overflow packages; which log is "the appropriate log"; post office hours; SC Logic access | Get the page after Return to Sender; confirm the StarRez entry point for mail lookups |
-| **Incident reporting** | Maxient Incident Report Form | Job Description: document incidents (FYI email and/or report); 5 P's escalation; submit in Maxient immediately (pp. 3–4) | **Partial** | What to include in a Maxient report; what an "FYI email" is and who receives it; on-call / Area Coverage contacts; emergency protocol | Add a public or approved incident-reporting guide; add an FYI-email procedure (non-sensitive template only) |
-| **Maintenance** | Maintenance Request Portal (assumed = School Dude) | School Dude problem-type table + steps 4–5 (p. 18); "Submit SchoolDude work orders" (Job Description p. 4); charge templates in the lockout and recore procedures | **Partial** | **Steps 1–3** of submitting a work order; emergency vs routine maintenance contacts; confirm School Dude = Asset Essentials | Get manual p. 18 (and the page before it); confirm the system name with headstaff |
+| **Incident reporting** | Maxient Incident Report Form | Job Description: document incidents (FYI email and/or report); 5 P's escalation; submit in Maxient immediately (pp. 3–4). **Manual p. 39: Resident Report / Area Coverage Follow-Up (partial):** headstaff call UTPD if the room is pinpointed; you may write an Incident Report | **Partial** | The **beginning of the resident report procedure** (p. 38 or earlier); what kind of report it covers; what to include in a Maxient report; what an "FYI email" is; on-call / Area Coverage contacts; emergency protocol | Add a public or approved incident-reporting guide; add an FYI-email procedure (non-sensitive template only) |
+| **Maintenance** | Maintenance Request Portal (assumed = SchoolDude) | **SchoolDude Maintenance Requests (p. 16):** all emergency and regular requests go into SchoolDude; step 1 "New Work Order". School Dude problem-type table + steps 4–5 (p. 18); "Submit SchoolDude work orders" (Job Description p. 4); charge templates in the lockout and recore procedures | **Partial** | **Steps 2–3** of submitting a work order (probably p. 17); emergency maintenance contact path; confirm SchoolDude = Asset Essentials | Get manual p. 17; confirm the system name with headstaff |
 | **Housing policies** | Housing Policies PDF (2023); RA Job Description PDF | 30+ policy sections (Section 2 lists the PDF passages) | **Partial** | Whether the 2023 policies are current; Hilltopics and the Student Code of Conduct (referenced, not available) | Check for a newer policies PDF; add the Hilltopics / Code of Conduct links once verified |
 | **Programming** | eRezLife (program proposals and programming documentation are submitted there; team-supplied) | — | **Partial** (was Missing before eRezLife) | How to plan and run a hall program; what a proposal must contain; deadlines; budget; the Community Development Model (CDM) | Collect the programming guide / CDM and the proposal requirements (PRD demo scenario 2) |
-| **RA responsibilities and duty procedures** | RA Job Description PDF; StarRez (rosters); **eRezLife** (weekly reports, daily logs, Vol Chats, suite visits) | Responsibilities, expectations, confidentiality, meetings, on-hall duty, paperwork, terms (Job Description pp. 1–6) | **Partial** | **What a weekly report contains and when it's due** (where to submit it is now known: eRezLife); what Vol Chats and suite visits require; duty rounds procedure; emergency response protocol; health and safety inspection procedure; room check-in/check-out procedure | Collect the duty/on-call manual sections and the weekly report / Vol Chat / suite visit requirements |
+| **RA responsibilities and duty procedures** | RA Job Description PDF; StarRez (rosters); **eRezLife** (weekly reports, daily logs, Vol Chats, suite visits) | Responsibilities, expectations, confidentiality, meetings, on-hall duty, paperwork, terms (Job Description pp. 1–6). **Fire Panel Response (p. 39)** names the RA On-Hall as investigator 5 p.m.–8 a.m. (safety-critical; Larry gives escalation only) | **Partial** | **What a weekly report contains and when it's due** (where to submit it is now known: eRezLife); what Vol Chats and suite visits require; duty rounds procedure; **current, building-specific fire and emergency procedures** (the p. 39 transcription isn't a substitute); health and safety inspection procedure; room check-in/check-out procedure | Collect the duty/on-call manual sections and the weekly report / Vol Chat / suite visit requirements |
 
 ---
 
@@ -754,13 +957,14 @@ eRezLife moved Programming from Missing to Partial (a portal exists, but no proc
 - [ ] **Medium · Not Started:** **University Housing website** and **"Expectations of University Housing Staff"**. *Why:* named as governing documents (Job Description p. 3). *Add to:* `resources.json`.
 - [ ] **Medium · In Progress:** **Programming resources.** Program proposals are submitted in eRezLife (added). Budget or request forms and programming guidelines are still missing. *Add to:* `resources.json` (programming).
 - [ ] **Low · Not Started:** **OIT technology guidelines** page. *Why:* referenced by the Computer Use policy. *Add to:* `resources.json`.
+- [ ] **Medium · Not Started:** **25Live** link (public room reservations, p. 16). *Why:* Larry can name 25Live but has no verified link. *Add to:* `resources.json`, then the sidecar `related` list for Public Room Reservations.
 
 ### 4.2 Missing procedures
 
 - [ ] **High · Not Started:** **Weekly report** procedure (what to include, deadline). *Where* is now known: eRezLife. *Add to:* new `data/procedures/*.md` section.
 - [ ] **Medium · Not Started:** **Daily log, Vol Chat and suite visit** requirements (what each record needs and how often). The portal is known (eRezLife), but nothing about the content is documented. *Add to:* new `data/procedures/*.md` section.
 - [ ] **High · Not Started:** **Hall program planning** procedure (PRD scenario 2), including the CDM. *Add to:* new procedures file.
-- [ ] **High · Not Started:** **Emergency response / on-call protocol** ("proper protocol procedures", 5 P's escalation, Area Coverage contacts as roles only). *Add to:* new procedures file.
+- [ ] **High · In Progress:** **Emergency response / on-call protocol** ("proper protocol procedures", 5 P's escalation, Area Coverage contacts as roles only). *Progress:* Fire Panel Response (p. 39) is added as **safety-critical** (escalation only). *Still needed:* current, building-specific fire and emergency procedures from an official source, plus other emergencies. *Add to:* new procedures file, marked `safety` in the sidecar.
 - [ ] **Medium · Not Started:** **Incident report (Maxient) how-to** and the **FYI email** process (non-sensitive template). *Add to:* procedures file + the Maxient catalog entry.
 - [ ] **Medium · Not Started:** **Front desk shift open/close** and **daily logs**. *Add to:* the front desk manual transcription.
 - [ ] **Medium · Not Started:** **Perishable / oversized / overflow package** handling. *Add to:* Mail & Delivery section.
@@ -769,7 +973,9 @@ eRezLife moved Programming from Missing to Partial (a portal exists, but no proc
 
 ### 4.3 Incomplete procedures
 
-- [ ] **High · Not Started:** **School Dude, steps 1–3** (manual p. 18). *Needed:* the photographed page(s) before steps 4–5. *Why:* every work-order and charge procedure depends on "fill out the top normally". *Add to:* School Dude section of the transcription.
+- [ ] **High · In Progress:** **SchoolDude work-order steps.** *Progress:* step 1 ("New Work Order") added from p. 16; steps 4–5 are on p. 18. *Still needed:* **steps 2–3** (probably manual p. 17). *Why:* every work-order and charge procedure depends on "fill out the top normally". *Add to:* SchoolDude sections of the transcription.
+- [ ] **Medium · Not Started:** **Equipment check-in steps** (p. 16 doesn't specify them) and each hall's checkout rules. *Add to:* Equipment Checkout / Check-In.
+- [ ] **Medium · Not Started:** **Beginning of the Resident Report / Area Coverage procedure** (p. 39 starts mid-procedure; the earlier page is needed). *Add to:* Resident Report section.
 - [ ] **Medium · Not Started:** **Return to Sender**: the steps after the NAA substep. *Needed:* the page after manual p. 32. *Add to:* the Return to Sender section.
 - [ ] **Low · Not Started:** **Lockout count lookup**: how staff find a resident's number of lockouts. *Add to:* lockout sections.
 
@@ -809,6 +1015,9 @@ eRezLife moved Programming from Missing to Partial (a portal exists, but no proc
 | 13 | **Page precision:** procedures cite their group's page range | All manual citations | Citation granularity | Accepted (DECISIONS 31) |
 | 14 | **PDF page vs printed page** (Job Description: printed = PDF + 43) | Job Description citations | Citation numbering | PDF page numbers are used for links |
 | 15 | **eRezLife uses are team-supplied** (weekly reports, daily logs, program proposals, Vol Chats, suite visits); the portal's contents behind the sign-in weren't inspected | eRezLife answers | Unverified scope | Larry names the portal and the sign-in requirement only; no in-portal steps |
+| 16 | **Fire Panel Response contains panel operating instructions** (acknowledge within 15 s, silence/reset after a confirmed nuisance alarm) from an unverified transcription | Fire Panel Response (p. 39) | **Safety-critical** | Sidecar `safety`: emergency notice shown **first**; prompt rule 14; a code guard replaces any answer containing acknowledge/silence/reset with an escalation-only message |
+| 17 | **SchoolDude work-order steps split across pages:** step 1 on p. 16, steps 4–5 on p. 18, steps 2–3 missing; spelled "SchoolDude" (p. 16) vs "School Dude" (p. 18) | SchoolDude Maintenance Requests; School Dude — Problem Type Reference | Incomplete source / cross-reference | Review flags on both units; Larry declines questions about steps 2–3 |
+| 18 | **Merge formatting:** sub-headings inside the p. 16/39 procedures became bold lines; "Source limitation" lines repeat the second transcription's own coverage notes; its Quick Reference table wasn't merged | The 6 merged units | Provenance | Documented in the knowledge base preamble and DECISIONS |
 
 Amounts that appear in **only one source** (not conflicts, but worth confirming):
 - $25 lost access card (manual)
@@ -825,15 +1034,16 @@ Amounts that appear in **only one source** (not conflicts, but worth confirming)
 | Catalog resources | **8** (7 with a verified-reachable URL, 1 without a URL by design) |
 | Resources requiring a sign-in | **5** |
 | Unverified URLs referenced in sources | **1** |
-| Items referenced in sources with no link in ResLink | **10** |
+| Items referenced in sources with no link in ResLink | **11** (25Live added) |
 | Paper forms / logs / physical items referenced | **11** (Section 1 table) |
-| Manual knowledge-base units | **18** (16 procedures, 1 overview, 1 reference table) |
-| Incomplete units | **2** |
-| Units with content review flags | **3** |
+| Manual knowledge-base units | **24** (22 procedures, 1 overview, 1 reference table; 6 merged from pages 16 and 39) |
+| Incomplete units | **5** |
+| Units with content review flags | **5** |
 | Units that mention an unverified URL | **3** |
-| Distinct units with any flag or incomplete marker | **8** |
+| Safety-critical units | **1** (Fire Panel Response) |
+| Distinct units with any flag, incomplete marker, or safety marker | **12** |
 | Procedural passages inside PDFs (listed in Section 2) | **7** groups |
 | Coverage areas | **8**: 0 Complete, 8 Partial, 0 Missing (Programming moved to Partial with eRezLife) |
-| Expansion checklist items | **27**: 1 Complete, 1 In Progress, 25 Not Started |
-| Source verification issues | **15** |
+| Expansion checklist items | **30**: 1 Complete, 3 In Progress, 26 Not Started |
+| Source verification issues | **18** |
 | Fictional content excluded from the knowledge base | Staff Bulletin (`data/bulletins.json`, 8 demo announcements) |

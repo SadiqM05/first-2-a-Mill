@@ -122,7 +122,7 @@ REAL_BY = by_section(REAL)
 
 def test_real_file_loads_without_warnings():
     assert REAL_WARNINGS == []
-    assert len(REAL) == 18
+    assert len(REAL) == 24  # 18 from pages 18 and 24-32, plus 6 merged from pages 16 and 39
     assert all(c.resource_id == "front-desk-manual" for c in REAL)
 
 
@@ -156,7 +156,9 @@ def test_real_step_order_and_notes_preserved():
 
 def test_real_incomplete_units():
     incomplete = {c.section for c in REAL if c.incomplete}
-    assert incomplete == {"Return to Sender", "School Dude — Problem Type Reference"}
+    assert incomplete == {"Return to Sender", "School Dude — Problem Type Reference",
+                          "Equipment Checkout / Check-In", "SchoolDude Maintenance Requests",
+                          "Resident Report / Area Coverage Follow-Up (Partial Procedure)"}
     assert "Steps 1–3" in REAL_BY["School Dude — Problem Type Reference"].incomplete
 
 
@@ -173,3 +175,50 @@ def test_real_related_links_are_catalog_ids():
     assert all(set(c.related) <= ids for c in REAL)
     assert REAL_BY["Steps for Lost Card"].related == ("lockout-card-access", "maintenance-request-portal")
     assert REAL_BY["Checking IN Packages"].related == ()  # SC Logic has no verified catalog link
+
+
+# --- pages 16 and 39 (merged from the second transcription) -------------------------------------
+
+NEW_UNITS = {
+    "Equipment Checkout / Check-In": 16, "Public Room Reservations": 16, "Lobby Advertisements": 16,
+    "SchoolDude Maintenance Requests": 16,
+    "Resident Report / Area Coverage Follow-Up (Partial Procedure)": 39, "Fire Panel Response": 39,
+}
+
+
+@pytest.mark.parametrize("section, page", NEW_UNITS.items())
+def test_new_units_present_with_page(section, page):
+    c = REAL_BY[section]
+    assert (c.page, c.page_end) == (page, None)
+    assert f"**Source:** p. {page}" in c.text  # original source line preserved
+
+
+def test_new_units_keep_original_notes_and_subheadings():
+    assert "> **Incomplete procedure:** The remaining work-order submission steps" in REAL_BY["SchoolDude Maintenance Requests"].text
+    assert "> **Note:** The beginning of this procedure is not visible" in REAL_BY[
+        "Resident Report / Area Coverage Follow-Up (Partial Procedure)"].text
+    assert "**When Area Coverage Arrives**" in REAL_BY[
+        "Resident Report / Area Coverage Follow-Up (Partial Procedure)"].text
+    assert "**Front Desk Procedure**" in REAL_BY["Public Room Reservations"].text
+
+
+def test_fire_panel_is_safety_critical_and_complete_text_kept():
+    fire = REAL_BY["Fire Panel Response"]
+    assert fire.safety and "emergency responders" in fire.safety and "does not give fire-panel operating steps" in fire.safety
+    assert "> **Important:** This section reproduces the pictured manual's instructions" in fire.text
+    assert fire.review == ()  # the safety notice covers it; no "transcription issue" label
+    assert sum(1 for c in REAL if c.safety) == 1
+
+
+def test_schooldude_pages_cross_referenced():
+    p16, p18 = REAL_BY["SchoolDude Maintenance Requests"], REAL_BY["School Dude — Problem Type Reference"]
+    assert any("Steps 2–3 are missing" in r for r in p16.review)
+    assert any("SchoolDude Maintenance Requests" in r for r in p18.review)
+    assert p16.related == ("maintenance-request-portal",)
+
+
+def test_no_new_links_invented():
+    ids = {r.id for r in REAL_RESOURCES}
+    for section in NEW_UNITS:
+        assert set(REAL_BY[section].related) <= ids
+    assert REAL_BY["Public Room Reservations"].related == ()  # 25Live has no verified catalog link

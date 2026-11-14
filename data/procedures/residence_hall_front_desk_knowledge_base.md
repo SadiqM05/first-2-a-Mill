@@ -2,6 +2,8 @@
 
 Source: uploaded photographs of manual pages 18 and 24–32. Steps below follow the supplied pages; where a procedure begins or ends outside the photographed pages, that limitation is noted.
 
+Pages 16 and 39 were added later from a second transcription of the same manual (provided photographs). They're merged at the end of this file. Their text is unchanged except that sub-headings inside a procedure are written as bold lines (so each procedure stays one unit), and "Source limitation" lines repeat that transcription's own coverage notes. Its "Quick Reference" summary table was not merged because it duplicates the procedures.
+
 ## Lockout Card Procedures (pp. 24–26)
 
 ### Steps to Issue Access Card
@@ -271,3 +273,112 @@ The visible continuation of the procedure on page 18 is:
 5. Press **Submit**.
 
 **Source limitation:** Steps 1–3 of this page-18 procedure were not supplied.
+
+## Equipment Checkout / Check-In (p. 16)
+
+Front desks may lend residents items including:
+
+- Kitchen supplies (baking pans, pots and pans, utensils, etc.).
+- Games.
+- Ping pong supplies.
+- Billiard supplies.
+- Cleaning supplies (vacuums, mops, brooms, etc.).
+- Sports equipment.
+
+**Procedure**
+
+1. Identify the specific front desk's checkout process; available items and rules may vary by hall.
+2. Follow that desk's required checkout procedures. These **may include taking an ID** and placing it in the appropriate binder while the resident has the item.
+3. Follow the hall's established check-in procedure when the item is returned. **The photographed page does not specify check-in steps.**
+
+**Source:** p. 16, “Equipment Checkout/in.”
+
+**Source limitation:** The photographed page does not specify check-in steps.
+
+## Public Room Reservations (p. 16)
+
+- All room reservations are **requested, modified, and created using 25Live**.
+- The building **Hall Director** is updated on reservations made through 25Live.
+- Depending on access arrangements for public rooms, the **OA** may need to help check out keys.
+
+**Front Desk Procedure**
+
+1. Ask whether the residence hall has public rooms available for reservation.
+2. Use the **25Live** process for reservation requests, changes, and creation.
+3. Determine whether the OA must assist with key checkout based on how access to the room is granted.
+4. Ensure the applicable key checkout process is followed correctly.
+
+**Source:** p. 16, “Public Room Reservations.”
+
+## Lobby Advertisements (p. 16)
+
+**Designated Public Board**
+
+1. Student organizations, community businesses, and local restaurants may advertise on a **designated public board** in the lobby.
+2. Know where menus and flyers are permitted in your hall lobby.
+
+**Mailboxes or Floor Posting**
+
+1. If someone wants flyers placed in **student mailboxes** or posted on **floors**, direct them to the **Director of Residence Life**.
+2. The Director of Residence Life determines whether distribution is approved.
+
+**Parking Garage Signage**
+
+- In buildings with a parking garage, signage is managed through **Parking Services** and requires approval by the **Communication and Customer Services Manager**.
+
+**Source:** p. 16, “Lobby Advertisements.”
+
+## SchoolDude Maintenance Requests (p. 16)
+
+- **All maintenance requests**, both **emergency** and **regular**, must be entered into the **SchoolDude database**.
+
+**Submitting a Work Order (Visible Step Only)**
+
+1. Click the **“New Work Order”** tab at the top.
+
+> **Incomplete procedure:** The remaining work-order submission steps are not visible in the provided photograph. Consult the next manual page or the applicable local instructions before submitting a request.
+
+**Source:** p. 16, “SchoolDude Maintenance Requests” and “Submitting a Work Order.”
+
+**Source limitation:** Page 16 ends after the first work-order submission step.
+
+## Resident Report / Area Coverage Follow-Up (Partial Procedure) (p. 39)
+
+> **Note:** The beginning of this procedure is not visible in the supplied image. Follow the steps below only in the context of the full procedure.
+
+- **Do not give the room number to headstaff.**
+- Wait on the floor for headstaff to arrive. If residents exit the room, explain the situation and ask them to wait.
+
+**When Area Coverage Arrives**
+
+1. **If area coverage and staff pinpoint the same room:**
+   - Headstaff will call **UTPD**.
+   - Depending on the outcome, you will write an **Incident Report**. Headstaff will let you know.
+2. **If they do not pinpoint the same room:**
+   - You do not need to do anything.
+3. **If a resident reports a specific room or resident:**
+   - Call **area coverage or headstaff** to ask how to proceed.
+
+**Source:** p. 39, top section.
+
+**Source limitation:** Page 39 starts mid-procedure; its title and initial steps are not supplied.
+
+## Fire Panel Response (p. 39)
+
+1. Press the fire panel **“acknowledge”** button **within 15 seconds**.
+2. Have someone investigate (e.g., headstaff, an RA, housekeeping, or maintenance). They have **3 minutes** to investigate.
+   - **8:00 a.m.–5:00 p.m.:** Radio maintenance/housekeeping.
+   - **5:00 p.m.–8:00 a.m.:** Call the RA On-Hall.
+3. The investigator confirms or denies whether it is a **nuisance alarm**. Examples given include vaping/smoking, cooking smoke, and shower steam—conditions that are not a fire or smoke from a fire.
+   - **Confirmed nuisance alarm:** Once the investigator confirms it is a nuisance alarm and communicates that it is okay to do so, press **“silence”** and then **“reset.”**
+   - **Not a nuisance alarm / evidence of fire** (such as smoke, flames, or scorch marks): Allow the alarm to go into **general alarm**, or pull a pull station so the **Fire Department** responds.
+4. Be ready for the **Call Center** to contact you for information. Know:
+   - What caused the alarm.
+   - Who investigated.
+   - Your name and position.
+   - The room number/location where it happened.
+5. **If the building enters general alarm** (e.g., strobe lights activate or alarms sound on all floors): Press **“acknowledge”** and wait for the **Fire Department and UTPD** to arrive.
+
+> **Important:** This section reproduces the pictured manual's instructions; it does not replace current building-specific fire procedures, emergency training, or directions from emergency responders. Do not treat an unverified alarm as a nuisance alarm.
+
+**Source:** p. 39, “Fire Panel Response.”

@@ -72,6 +72,8 @@ class Chunk:
     incomplete: str | None = None  # source-limitation text when the source pages are incomplete
     review: tuple[str, ...] = ()  # passages flagged for manual verification
     related: tuple[str, ...] = ()  # catalog IDs of verified resources this procedure uses
+    safety: str | None = None  # safety-critical (e.g. fire alarms): escalation guidance from the sidecar
+    companions: tuple[str, ...] = ()  # sections holding other fragments of the same procedure
 
     @property
     def unit_key(self) -> tuple[str, int | None, str | None]:
@@ -101,6 +103,7 @@ class Evidence:
     incomplete: str | None = None
     review: tuple[str, ...] = ()
     related: tuple[Resource, ...] = ()  # resolved from the catalog, never from model output
+    safety: str | None = None  # safety-critical unit: Larry escalates and never gives operating steps
 
     @property
     def evidence_id(self) -> str:
@@ -150,7 +153,8 @@ NOTE_UNVERIFIED = "unverified"  # source not verified as current: compact note b
 NOTE_UNVERIFIED_LINK = "unverified_link"  # source mentions an unverified web address: compact note
 NOTE_INCOMPLETE = "incomplete"  # source pages incomplete: prominent warning
 NOTE_REVIEW = "review"  # passage possibly transcribed incorrectly: prominent warning
-PROMINENT_NOTES = frozenset({NOTE_INCOMPLETE, NOTE_REVIEW})
+NOTE_SAFETY = "safety"  # emergency/safety-critical source: shown FIRST, above the answer
+PROMINENT_NOTES = frozenset({NOTE_INCOMPLETE, NOTE_REVIEW, NOTE_SAFETY})
 
 
 @dataclass(frozen=True)
@@ -167,6 +171,7 @@ class Note:
 
 class Status(str, Enum):
     GROUNDED = "grounded"
+    PARTIAL = "partial"  # grounded, but the cited procedure is only partly documented
     INSUFFICIENT_EVIDENCE = "insufficient_evidence"
     ERROR = "error"
 

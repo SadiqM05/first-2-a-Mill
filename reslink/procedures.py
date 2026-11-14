@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from reslink.models import Chunk, Resource, slugify
@@ -53,6 +53,8 @@ class ProcedureError(ValueError):
 class ProcedureMeta:
     related: dict[str, tuple[str, ...]]
     review: dict[str, tuple[str, ...]]
+    safety: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    companions: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 def parse_procedures(markdown: str, resource_id: str) -> list[Chunk]:
@@ -141,8 +143,8 @@ def load_meta(path: Path, sections: set[str], catalog_ids: set[str]) -> Procedur
     except json.JSONDecodeError as exc:
         raise ProcedureError([f"{path.name} is not valid JSON: {exc}"]) from exc
     errors: list[str] = []
-    related, review = {}, {}
-    for key, target, check_ids in (("related", related, True), ("review", review, False)):
+    related, review, safety = {}, {}, {}
+    for key, target, check_ids in (("related", related, True), ("review", review, False), ("safety", safety, False)):
         block = data.get(key, {})
         if not isinstance(block, dict):
             errors.append(f"{path.name}: '{key}' must be an object keyed by section title")
@@ -160,12 +162,24 @@ def load_meta(path: Path, sections: set[str], catalog_ids: set[str]) -> Procedur
                     errors.append(f"{path.name}: related[{section!r}] has unknown catalog IDs {unknown}")
                     continue
             target[section] = tuple(v.strip() for v in values)
-    unknown_keys = set(data) - {"related", "review", "_comment"}
+    companions = {}
+    block = data.get("companions", {})
+    if not isinstance(block, dict):
+        errors.append(f"{path.name}: 'companions' must be an object keyed by section title")
+        block = {}
+    for section, values in block.items():
+        if section not in sections:
+            errors.append(f"{path.name}: companions refers to unknown section {section!r}")
+        elif not isinstance(values, list) or not all(isinstance(v, str) and v in sections and v != section for v in values):
+            errors.append(f"{path.name}: companions[{section!r}] must list other existing section titles")
+        else:
+            companions[section] = tuple(values)
+    unknown_keys = set(data) - {"related", "review", "safety", "companions", "_comment"}
     if unknown_keys:
         errors.append(f"{path.name}: unknown keys {sorted(unknown_keys)}")
     if errors:
         raise ProcedureError(errors)
-    return ProcedureMeta(related, review)
+    return ProcedureMeta(related, review, safety, companions)
 
 
 def meta_path(source: Path) -> Path:
@@ -180,7 +194,9 @@ def load_resource_procedures(resource: Resource, root: Path, resources: list[Res
     chunks = parse_procedures(source.read_text(encoding="utf-8"), resource.id)
     meta = load_meta(meta_path(source), {c.section for c in chunks}, {r.id for r in resources})
     return [
-        replace(c, related=meta.related.get(c.section, ()), review=c.review + meta.review.get(c.section, ()))
+        replace(c, related=meta.related.get(c.section, ()), review=c.review + meta.review.get(c.section, ()),
+                safety=" ".join(meta.safety.get(c.section, ())) or None,
+                companions=meta.companions.get(c.section, ()))
         for c in chunks
     ]
 

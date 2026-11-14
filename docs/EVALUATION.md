@@ -186,3 +186,33 @@ Card, pp. 24–26) → two compact notes, with no raw URL text. **About 13 live 
 - *After:* the steps begin immediately, followed by one Sources line and compact notes.
 - *Before:* "Where is the form to fill it out?" was sent to retrieval and Gemini with no context.
 - *After:* it's resolved against the previous question and answered "kept … at the front desk".
+
+# Incomplete procedures: `partial` status (2026-11-14)
+
+Offline: `pytest` → **523 passed, 4 xfailed**; `tests/test_partial_procedures.py` adds 25 tests
+covering gap marking, original numbering, companions, declines, safety and UI.
+`compare_retrieval`: every case still found by keyword and hybrid (K:Y H:Y).
+
+## Live Gemini (`run_eval --live --tag live_partial`, 7 questions, `gemini-3.5-flash-lite`)
+
+Final run: **7/7 statuses, 7/7 citation/content checks.**
+
+| Question | Result |
+|---|---|
+| How do I enter a SchoolDude work order? | `partial`. Step 1 (p. 16), then "Steps 2–3 are missing from the source.", then steps 4–5 (p. 18) with their original numbers; cites both pages; Maintenance Request Portal linked; amber notice recommends official documentation/headstaff. |
+| What are steps 2 and 3 for submitting a SchoolDude work order? | Declined, no citations. |
+| How do I return a letter to sender? | `partial`, steps 1–3 + NAA substep, incomplete note shown. |
+| How do I check in borrowed equipment? | `partial`; says check-in steps aren't specified. |
+| How do I check in a package? (complete) | `grounded`, 12/12 steps, unchanged. |
+| The fire panel is going off | `grounded`, escalation only, no acknowledge/silence/reset, red emergency note first. |
+| How do I process a refund for a resident? | Declined. |
+
+Issues found by the live runs and fixed:
+- run 1: SchoolDude gave step 1 only. Fixed with the "OTHER FRAGMENT OF THE SAME PROCEDURE" evidence line.
+- run 1: Return to Sender steps stayed inline. Fixed: `format_steps` now handles a run starting at the very beginning.
+- run 2: SchoolDude was correct but inline (1 … 4 … 5). Fixed: inline runs that jump are split when the text says steps are missing; gap lines get blank lines so Markdown keeps the numbers.
+- run 2: a console encoding crash (cp1252) after 1 call. Rerun with `PYTHONIOENCODING=utf-8`.
+
+Total for this task: **22 live calls** (7 + 1 + 7 + 7). Model wording varies: in the final run
+Larry's own sentence said "consult the manual's next page or local instructions". The fixed amber
+notice still says "check current official documentation or ask your headstaff".
