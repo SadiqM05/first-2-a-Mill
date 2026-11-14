@@ -1,28 +1,25 @@
-# AI tooling
-docs/
-claude.md
-
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
-.pytest_cache/
 
 # Virtual environments
-.env
-.env.*
 .venv/
+.venv*/
 venv/
 env/
 ENV/
+
+# Secrets (never commit real keys; .env.example holds names only)
+.env
+.env.*
 !.env.example
-
-# databases and indexes
-chroma_db/
-*.sqlite3
-
-# streamlit secrets
 .streamlit/secrets.toml
+
+# Local indexes and databases (machine-specific, rebuild with scripts/)
+chroma_db/
+data/index/
+*.sqlite3
 
 # Build and test artifacts
 build/
@@ -32,6 +29,7 @@ dist/
 .mypy_cache/
 .ruff_cache/
 
-# os/editor
+# OS / editor
 .DS_Store
+Thumbs.db
 .vscode/

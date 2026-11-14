@@ -1,0 +1,24 @@
+[
+  {
+    "id": "placeholder-maintenance-001",
+    "title": "PLACEHOLDER - Test maintenance resource (not a real UT resource)",
+    "category": "maintenance",
+    "url": "https://example.org/placeholder/maintenance",
+    "content_type": "webpage",
+    "description": "Test fixture only. Must never appear in the app or demo.",
+    "keywords": ["repair", "broken"]
+  },
+  {
+    "id": "placeholder-reporting-001",
+    "title": "PLACEHOLDER - Test reporting form (not a real UT resource)",
+    "category": "reporting",
+    "url": "https://example.org/placeholder/reporting.pdf",
+    "content_type": "pdf"
+  },
+  {
+    "id": "placeholder-reporting-002",
+    "title": "PLACEHOLDER - Another test reporting resource (not a real UT resource)",
+    "category": "reporting",
+    "url": "https://www.example.com/placeholder/reporting-2"
+  }
+]

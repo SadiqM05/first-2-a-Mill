@@ -1,21 +1,25 @@
+"""Streamlit entry point for ResLink AI. Run with: streamlit run app.py"""
+
 import streamlit as st
 
-st.set_page_config(
-    page_title="ResLink AI",
-    page_icon="📚",
-    layout="wide"
-)
+from reslink import ui
+from reslink.catalog import CatalogError, group_by_category, load_catalog
+from reslink.config import load_env_file, load_settings
 
-st.title("ResLink AI")
-st.subheader("Your Intelligent RA Resource Navigator")
+st.set_page_config(page_title="ResLink AI", page_icon="📚", layout="wide")
 
-st.write("Find resources, understand procedures, and get answers.")
+load_env_file()
+settings = load_settings()
 
-question = st.chat_input("What do you need help with?")
+ui.render_header()
 
-if question:
-    with st.chat_message("user"):
-        st.write(question)
+try:
+    resources = load_catalog(settings.catalog_path)
+except CatalogError as error:
+    ui.render_sidebar_status(settings, resource_count=None)
+    ui.render_catalog_error(error)
+else:
+    ui.render_sidebar_status(settings, resource_count=len(resources))
+    ui.render_dashboard(group_by_category(resources))
 
-    with st.chat_message("assistant"):
-        st.info("AI integration coming soon!")
+ui.render_chat(st.chat_input("What do you need help with?"))
