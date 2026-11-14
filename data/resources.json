@@ -1,1 +1,56 @@
-[]
+[
+  {
+    "id": "maintenance-request-portal",
+    "title": "Maintenance Request Portal (UTK Housing, Asset Essentials)",
+    "category": "maintenance",
+    "url": "https://assetessentials.dudesolutions.com/UTKHousing",
+    "content_type": "portal",
+    "description": "UTK Housing's maintenance request portal on Asset Essentials (Brightly Software). Requires signing in; the link opens a sign-in page.",
+    "keywords": ["maintenance request", "maintenance", "repair", "broken", "fix", "work order", "facilities", "asset essentials", "schooldude"]
+  },
+  {
+    "id": "lockout-card-access",
+    "title": "Lockout Card Access (Housing RA Login)",
+    "category": "ra_portals",
+    "url": "https://saweb.asa.utk.edu/housing_ra/ra_login.asp",
+    "content_type": "portal",
+    "description": "Housing RA login page for lockout card access. Requires a UT NetID and password.",
+    "keywords": ["lockout", "locked out", "lockout card", "card access", "key card", "access card", "netid"]
+  },
+  {
+    "id": "starrez-roster",
+    "title": "Roster Information (StarRez)",
+    "category": "ra_portals",
+    "url": "https://utk.starrezhousing.com/StarRezWeb/dashboard/1596",
+    "content_type": "portal",
+    "description": "UTK StarRez housing portal for roster information. Requires signing in (UTK Staff SSO login is offered).",
+    "keywords": ["roster", "resident roster", "room assignments", "starrez", "floor list"]
+  },
+  {
+    "id": "incident-report-form",
+    "title": "Incident Report Form (Maxient)",
+    "category": "reporting",
+    "url": "https://cm.maxient.com/reportingform.php?UnivofTennessee&layout_id=2",
+    "content_type": "portal",
+    "description": "University of Tennessee incident reporting form in Maxient. Requires signing in through UT's Central Authentication Service (NetID). The RA Job Description says documentation of policy violations must be submitted in Maxient immediately following the incident.",
+    "keywords": ["incident report", "incident", "maxient", "report an incident", "policy violation", "documentation", "document an incident"]
+  },
+  {
+    "id": "ra-job-description",
+    "title": "Resident Assistant Job Description (Residence Life Manual)",
+    "category": "policies",
+    "url": "https://studentlife.utk.edu/housing/wp-content/uploads/sites/9/2024/05/Resident-Assistant-Job-Description-1.pdf",
+    "content_type": "pdf",
+    "description": "UT University Housing's Resident Assistant position description (Residence Life Manual, pp. 44-49): responsibilities, expectations, confidentiality, on-hall duty, paperwork, terms of employment, academic standards, and remuneration.",
+    "keywords": ["job description", "position description", "responsibilities", "expectations", "duties", "residence life manual", "ra role"]
+  },
+  {
+    "id": "housing-policies",
+    "title": "University Housing Policies",
+    "category": "policies",
+    "url": "https://studentlife.utk.edu/housing/wp-content/uploads/sites/9/2024/05/UH-Policies-7.21.2023.pdf",
+    "content_type": "pdf",
+    "description": "UT University Housing residence hall policies (file dated 7.21.2023), covering topics such as alcohol, animals, cooking and appliances, decorations, fire safety, keys and ID cards, quiet and courtesy hours, smoking, visitation and escort, weapons, and inspection and search.",
+    "keywords": ["housing policies", "policy", "policies", "rules", "prohibited", "allowed", "quiet hours", "courtesy hours", "visitation", "guests", "alcohol", "fire safety", "appliances", "decorations"]
+  }
+]

@@ -6,13 +6,7 @@ import streamlit as st
 
 from reslink.catalog import CatalogError
 from reslink.config import Settings
-from reslink.models import CATEGORIES, Resource
-
-ASSISTANT_NOT_CONNECTED = (
-    "The AI assistant isn't connected yet, so I can't answer questions. "
-    "Please browse the verified resources above. I won't guess at policies, "
-    "deadlines, or links."
-)
+from reslink.models import CATEGORIES, AssistantResponse, Citation, Resource, Status
 
 
 def render_header() -> None:
@@ -24,13 +18,24 @@ def render_header() -> None:
     )
 
 
-def render_sidebar_status(settings: Settings, resource_count: int | None) -> None:
+def render_sidebar_status(
+    settings: Settings,
+    resource_count: int | None,
+    chunk_count: int = 0,
+    index_warnings: list[str] | None = None,
+) -> None:
     with st.sidebar:
         st.header("Status")
         if resource_count is None:
             st.write("Catalog: unavailable")
         else:
             st.write(f"Verified resources: {resource_count}")
+        if chunk_count:
+            st.write(f"Indexed document passages: {chunk_count}")
+        else:
+            st.write("Document index: not built (run `python -m scripts.build_index`)")
+        for warning in index_warnings or []:
+            st.warning(warning)
         # Never display the key itself, only whether one is configured.
         st.write("Gemini: configured" if settings.gemini_configured else "Gemini: not configured")
 
@@ -42,13 +47,17 @@ def render_catalog_error(error: CatalogError) -> None:
             st.write(f"- {message}")
 
 
-def _render_resource_card(resource: Resource) -> None:
+def _render_resource_card(resource: Resource, citations: tuple[Citation, ...] = ()) -> None:
+    pages = sorted({c.page for c in citations if c.page is not None})
+    # Link comes from the validated catalog entry (plus a page anchor for cited PDF pages).
+    link = Citation(resource, pages[0] if pages else None).link
     with st.container(border=True):
-        # Link comes straight from the validated catalog entry.
-        st.link_button(resource.title, resource.url)
+        st.link_button(resource.title, link)
         if resource.description:
             st.write(resource.description)
-        st.caption(f"{resource.content_type} · {resource.url}")
+        login = " · sign-in required" if resource.requires_login else ""
+        cited = f" · cited page(s): {', '.join(map(str, pages))}" if pages else ""
+        st.caption(f"{resource.category_label} · {resource.content_type}{login}{cited} · {resource.url}")
 
 
 def render_dashboard(grouped: dict[str, list[Resource]]) -> None:
@@ -67,10 +76,27 @@ def render_dashboard(grouped: dict[str, list[Resource]]) -> None:
                 _render_resource_card(resource)
 
 
-def render_chat(question: str | None) -> None:
-    if not question:
-        return
-    with st.chat_message("user"):
-        st.write(question)
-    with st.chat_message("assistant"):
-        st.info(ASSISTANT_NOT_CONNECTED)
+def render_response(response: AssistantResponse) -> None:
+    """Show an assistant response. Links come only from response.resources (catalog entries)."""
+    if response.notice:
+        if response.status is Status.ERROR:
+            st.warning(response.notice)
+        else:
+            st.info(response.notice)
+    if response.answer:
+        st.markdown(response.answer)
+    if response.resources:
+        label = "Sources" if response.status is Status.GROUNDED else "Related verified resources"
+        st.caption(label)
+        for resource in response.resources:
+            _render_resource_card(
+                resource, tuple(c for c in response.citations if c.resource.id == resource.id)
+            )
+
+
+def render_chat_history(history: list[tuple[str, AssistantResponse]]) -> None:
+    for question, response in history:
+        with st.chat_message("user"):
+            st.write(question)
+        with st.chat_message("assistant"):
+            render_response(response)

@@ -1,0 +1,118 @@
+[
+  {
+    "question": "A resident needs something repaired. Where do I start?",
+    "expected_catalog": "maintenance-request-portal",
+    "expected_status": "grounded",
+    "note": "PRD demo scenario 3"
+  },
+  {
+    "question": "The sink in room 214 is broken, how do I put in a maintenance request?",
+    "expected_catalog": "maintenance-request-portal",
+    "expected_status": "grounded"
+  },
+  {
+    "question": "How do I submit a work order?",
+    "expected_catalog": "maintenance-request-portal",
+    "expected_evidence": ["ra-job-description@p4"],
+    "expected_status": "grounded",
+    "note": "Job description p4: 'Submit SchoolDude work orders'"
+  },
+  {
+    "question": "A resident is locked out of their room",
+    "expected_catalog": "lockout-card-access",
+    "expected_status": "grounded"
+  },
+  {
+    "question": "Where do I log a lockout card?",
+    "expected_catalog": "lockout-card-access",
+    "expected_status": "grounded"
+  },
+  {
+    "question": "Where can I see my floor roster?",
+    "expected_catalog": "starrez-roster",
+    "expected_status": "grounded"
+  },
+  {
+    "question": "How do I check room assignments for my residents?",
+    "expected_catalog": "starrez-roster",
+    "expected_status": "grounded"
+  },
+  {
+    "question": "Where do I submit an incident report?",
+    "expected_catalog": "incident-report-form",
+    "expected_status": "grounded"
+  },
+  {
+    "question": "What is the minimum GPA for RAs?",
+    "expected_catalog": null,
+    "expected_evidence": ["ra-job-description@p5"],
+    "expected_status": "grounded",
+    "note": "p5: 2.75 cumulative; below 2.50 is immediate termination"
+  },
+  {
+    "question": "How many front desk hours do I work each week?",
+    "expected_catalog": null,
+    "expected_evidence": ["ra-job-description@p1", "ra-job-description@p5"],
+    "expected_status": "grounded",
+    "note": "average of 6 hours per week at front desk and/or post office"
+  },
+  {
+    "question": "When do I hold open door hours?",
+    "expected_catalog": null,
+    "expected_evidence": ["ra-job-description@p1"],
+    "expected_status": "grounded",
+    "note": "p1: three hours, three different evenings, 5-10pm Sunday-Thursday"
+  },
+  {
+    "question": "Where do I submit my weekly RA report?",
+    "expected_catalog": null,
+    "expected_status": "insufficient_evidence",
+    "note": "PRD demo scenario 1; job description lists weekly reports as a task but not where to submit"
+  },
+  {
+    "question": "What steps do I follow to organize a hall program?",
+    "expected_catalog": null,
+    "expected_status": "insufficient_evidence",
+    "note": "PRD demo scenario 2; no verified programming resource yet"
+  },
+  {
+    "question": "What is the quiet hours policy?",
+    "expected_catalog": "housing-policies",
+    "expected_evidence": ["housing-policies@p5"],
+    "expected_status": "grounded",
+    "note": "Housing Policies p5: Quiet Hours and Courtesy Hours"
+  },
+  {
+    "question": "Can a resident have an air fryer?",
+    "expected_catalog": null,
+    "expected_evidence": ["housing-policies@p2"],
+    "expected_status": "grounded",
+    "note": "p2: may be stored, not used, in community/suite bedrooms"
+  },
+  {
+    "question": "A resident lost their room key, what happens?",
+    "expected_catalog": null,
+    "expected_evidence": ["housing-policies@p4"],
+    "expected_status": "grounded",
+    "note": "p4: Keys and ID Cards"
+  },
+  {
+    "question": "What is the guest policy?",
+    "expected_catalog": "housing-policies",
+    "expected_evidence": ["housing-policies@p6"],
+    "expected_status": "grounded",
+    "note": "p6: Visitation and Escort Policy"
+  },
+  {
+    "question": "Can residents drink alcohol if they are 21?",
+    "expected_catalog": "housing-policies",
+    "expected_evidence": ["housing-policies@p1"],
+    "expected_status": "grounded",
+    "note": "p1: prohibited regardless of age"
+  },
+  {
+    "question": "Where can I park overnight?",
+    "expected_catalog": null,
+    "expected_status": "insufficient_evidence"
+  }
+]
