@@ -1,0 +1,37 @@
+# AI tooling
+docs/
+claude.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Virtual environments
+.env
+.env.*
+.venv/
+venv/
+env/
+ENV/
+!.env.example
+
+# databases and indexes
+chroma_db/
+*.sqlite3
+
+# streamlit secrets
+.streamlit/secrets.toml
+
+# Build and test artifacts
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# os/editor
+.DS_Store
+.vscode/
