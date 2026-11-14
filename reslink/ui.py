@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from datetime import date
+from pathlib import Path
 
 import streamlit as st
 
@@ -25,6 +26,14 @@ from reslink.bulletin import (
 from reslink.catalog import CatalogError
 from reslink.config import Settings
 from reslink.models import CATEGORIES, AssistantResponse, Citation, Resource, Status
+
+
+_THEME_CSS_PATH = Path(__file__).parent / "static" / "theme.css"
+
+
+def inject_theme() -> None:
+    """Shared visual tokens and card/button/focus styles (colors and fonts: .streamlit/config.toml)."""
+    st.html(f"<style>{_THEME_CSS_PATH.read_text(encoding='utf-8')}</style>")
 
 
 def render_header() -> None:
@@ -77,7 +86,7 @@ def _render_resource_card(resource: Resource, citations: tuple[Citation, ...] = 
     pages = sorted({c.page for c in citations if c.page is not None and not c.section})
     # Link comes from the validated catalog entry (plus a page anchor for cited PDF pages).
     link = Citation(resource, pages[0] if pages else None).link
-    with st.container(border=True):
+    with st.container(border=True, key=f"rl-card-{resource.id}"):  # key -> card styling (theme.css)
         if link:
             st.link_button(resource.title, link)
         else:  # e.g. a manual transcription: never invent a link
@@ -169,7 +178,7 @@ def _format_date(d: date) -> str:
 
 
 def _render_announcement(item: Announcement, read: bool) -> None:
-    with st.container(border=True):
+    with st.container(border=True, key=f"rl-bulletin-{item.id}"):  # key -> card styling (theme.css)
         with st.container(horizontal=True):
             if not read:
                 st.badge("Unread", icon=":material/fiber_manual_record:", color="gray")

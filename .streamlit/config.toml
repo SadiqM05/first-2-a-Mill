@@ -1,0 +1,50 @@
+# ResLink AI theme: UT Blackout-inspired dark theme plus a matching light theme.
+#
+# Do NOT set [theme] base: it hides Streamlit's Light/Dark/System toggle (tests/test_theme.py).
+# Colors live only in [theme.dark] / [theme.light] here and in the matching tokens in
+# reslink/static/theme.css. Font URLs must be under [theme]: Streamlit only loads font
+# stylesheets from there, not from the light/dark sections.
+#
+# Fonts load from Google Fonts. Without internet the browser falls back to its sans-serif.
+
+[theme]
+# Shared by both themes (fonts, shape). No colors and never `base` here.
+showWidgetBorder = true
+baseRadius = "0.6rem"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+headingFont = "Manrope:https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&display=swap"
+headingFontWeights = [800, 700, 700, 600, 600, 600]
+
+[theme.dark]
+primaryColor = "#FF8200"                # Tennessee Orange: primary buttons, selected nav, focus
+backgroundColor = "#0A0A0A"             # main background
+secondaryBackgroundColor = "#303030"    # elevated surfaces: inputs, chat input, code
+textColor = "#FFFFFF"
+linkColor = "#FF8200"                   # 7.96:1 on #0A0A0A
+borderColor = "#3A3A3A"
+
+[theme.dark.sidebar]
+backgroundColor = "#1C1C1C"
+secondaryBackgroundColor = "#303030"
+textColor = "#FFFFFF"
+borderColor = "#3A3A3A"
+
+[theme.light]
+# Tennessee Orange text fails contrast on white (2.49:1), so light mode uses a darker
+# burnt orange for text-bearing accents (5.71:1). The Larry launcher keeps #FF8200 with a dark icon.
+primaryColor = "#A34F00"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2F2F2"
+textColor = "#1A1A1A"
+linkColor = "#A34F00"
+borderColor = "#D6D6D6"
+
+[theme.light.sidebar]
+backgroundColor = "#F7F7F7"
+secondaryBackgroundColor = "#ECECEC"
+textColor = "#1A1A1A"
+borderColor = "#D6D6D6"
+
+[server]
+# Serves ./static/ at app/static/ (Larry's launcher image: static/larry.png).
+enableStaticServing = true

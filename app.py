@@ -55,6 +55,7 @@ def _index_mtime(path: Path) -> float:
     return db.stat().st_mtime if db.is_file() else 0.0
 
 
+ui.inject_theme()
 ui.render_header()
 
 try:

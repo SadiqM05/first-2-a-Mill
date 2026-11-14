@@ -163,7 +163,7 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 
 ## 4. Testing and evaluation (measured 2026-11-14)
 
-**Automated:** `pytest` → **523 passed, 4 xfailed** (527 collected, about 45 s, offline, no Gemini
+**Automated:** `pytest` → **530 passed, 4 xfailed** (534 collected, about 45 s, offline, no Gemini
 calls). That includes the 25 partial-procedure tests (`tests/test_partial_procedures.py`), the Milestone 5 bulletin tests and 30 Milestone 6 response-quality tests
 (`tests/test_response_quality.py`). The
 4 xfails are documented known misses:
@@ -289,7 +289,7 @@ the key.** Claude should check configuration with `load_settings().gemini_config
 ```powershell
 python -m scripts.build_index        # PDFs -> chunks.json -> Chroma (+ procedures). Stop the app first.
 streamlit run app.py                 # sidebar should show: 7 resources, 46 passages, Retrieval: hybrid
-pytest                               # offline, ~41 s, expect 523 passed / 4 xfailed
+pytest                               # offline, ~41 s, expect 530 passed / 4 xfailed
 python -m scripts.compare_retrieval --sweep   # offline retrieval metrics
 python -m scripts.run_eval --live    # LIVE: 8 Gemini calls (quota). --keyword-only to compare.
 ```
@@ -325,7 +325,7 @@ Until then the sidebar shows the semantic index as **stale** and retrieval falls
    **don't commit**; just note it.
 3. Check the environment **without exposing secrets**:
    `python -c "from reslink.config import load_env_file, load_settings; load_env_file(); s=load_settings(); print(s.gemini_model, s.gemini_configured)"`.
-4. Run `pytest`. Expect **523 passed, 4 xfailed**; investigate any difference before doing anything
+4. Run `pytest`. Expect **530 passed, 4 xfailed**; investigate any difference before doing anything
    else.
 5. If `data/index/` is missing or the sidebar says stale, run `python -m scripts.build_index`.
 6. Ask the user:

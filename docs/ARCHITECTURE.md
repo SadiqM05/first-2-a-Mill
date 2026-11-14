@@ -38,7 +38,7 @@ the embedding model.
 
 | Layer | Technology (as built) | Responsibility |
 |---|---|---|
-| UI | Streamlit 1.67 (`app.py`, `reslink/ui.py`, `reslink/larry.py`, `reslink/static/larry.css`) | Category dashboard, resource cards, sidebar status, Larry floating chat |
+| UI | Streamlit 1.67 (`app.py`, `reslink/ui.py`, `reslink/larry.py`, `reslink/static/{theme,larry}.css`, `.streamlit/config.toml`, `static/larry.png`) | Category dashboard, resource cards, sidebar status, Larry floating chat |
 | Generation | Gemini through `google-genai` (`reslink/assistant.py`); model from `GEMINI_MODEL` | JSON answer `{sufficient, answer, cited_ids}` from supplied evidence only |
 | Keyword retrieval | Pure Python (`reslink/retrieval.py`) | Weighted catalog matching; BM25-style IDF over document units |
 | Semantic retrieval | ChromaDB 1.5 persistent collection + built-in ONNX all-MiniLM-L6-v2 (`reslink/semantic.py`) | Nearest catalog entries and chunks; telemetry disabled |
@@ -197,9 +197,26 @@ is picked up without a restart.
   - history is kept in `st.session_state` (memory only, redacted);
   - the input is disabled while answering;
   - responsive on desktop and phone sizes.
-- **Theme:** Streamlit's built-in System/Light/Dark menu. Larry uses `Canvas` / `currentColor`, so
-  it follows the active theme. **Never** set `[theme] base` in `.streamlit/config.toml`; a test
-  guards this.
+- **Theme (UT Blackout-inspired):** Streamlit's built-in System/Light/Dark menu is kept.
+  - `.streamlit/config.toml`: `[theme.dark]` holds the Blackout palette (#0A0A0A background,
+    #1C1C1C sidebar, #303030 inputs, #FF8200 primary, #3A3A3A borders); `[theme.light]` is a
+    matching light theme whose accent is #A34F00 (orange text fails contrast on white).
+    Top-level `[theme]` holds only fonts and shape: Inter (body) and Manrope (headings) from
+    Google Fonts. Streamlit only loads font URLs from there; offline, fonts fall back to sans-serif.
+    **Never** set `[theme] base`; a test guards this.
+  - `reslink/static/theme.css` (`ui.inject_theme()`): every color is a `--rl-*` token defined
+    with `light-dark()`, which follows the `color-scheme` Streamlit sets. It covers card surfaces
+    (keyed `rl-card-*` / `rl-bulletin-*` containers, #242424), dark text on orange primary
+    buttons, full-contrast captions, and `:focus-visible` rings.
+  - `larry.css` uses tokens only, each with a `Canvas`/`currentColor` fallback.
+  - **Launcher:** a 72px (64px on phones) circle showing `static/larry.png` (Streamlit static
+    serving, `app/static/larry.png`) with a 3px #FF8200 border, a shadow, and hover, active and
+    focus states. The text "Chat with Larry" is its accessible name, visually hidden. A CSS
+    tooltip (`::before` on the fixed launcher container, so nothing clips it) shows "Chat with
+    Larry" above the circle on hover and keyboard focus; it is nudged left to stay 8px inside the
+    viewport. No `help=` on the button (it would add a duplicate Streamlit tooltip).
+  - Injected CSS must not contain tag-like text (`<img>` even in a comment): Streamlit's
+    sanitizer drops the whole `<style>` block. A test guards this.
 
 ## 8a. Staff Bulletin (Milestone 5)
 
@@ -264,7 +281,7 @@ data/bulletins.json -> reslink/bulletin.py (validate, search, filter, order) -> 
 app.py                     Streamlit entry point (wiring, caching)
 reslink/                   core package (only ui.py and larry.py import Streamlit)
   models.py config.py catalog.py ingest.py procedures.py retrieval.py
-  semantic.py assistant.py privacy.py bulletin.py ui.py larry.py static/larry.css
+  semantic.py assistant.py privacy.py bulletin.py ui.py larry.py static/{theme,larry}.css
 scripts/                   build_index, compare_retrieval, run_eval, check_gemini
 data/resources.json        verified catalog
 data/bulletins.json        Staff Bulletin announcements (fictional demo data)

@@ -1,0 +1,72 @@
+/*
+ * ResLink AI shared visual tokens (UT Blackout-inspired), injected once by ui.inject_theme().
+ *
+ * Streamlit's own colors and fonts come from .streamlit/config.toml ([theme.dark] /
+ * [theme.light]). This file only covers what config can't: card surfaces, the Larry
+ * launcher, primary-button text and focus rings.
+ *
+ * Every color is a token defined with light-dark(light, dark). Streamlit sets
+ * `color-scheme` to match the Light/Dark/System toggle, so tokens switch with it.
+ * larry.css uses these tokens only (no literal colors).
+ *
+ * Selectors: our own keyed containers (st.container(key="x") adds class "st-key-x", which
+ * Streamlit documents), plus standard elements and attributes. No emotion class names.
+ */
+
+:root {
+  --rl-orange: #FF8200;                                 /* Tennessee Orange (launcher fill) */
+  --rl-orange-hover: #FF9A33;
+  --rl-orange-active: #E07200;
+  --rl-on-orange: #0A0A0A;                              /* 7.96:1 on #FF8200 */
+  --rl-tooltip-bg: #242424;                             /* Larry tooltip: Blackout in both themes */
+  --rl-tooltip-text: #FFFFFF;                           /* 15.9:1 on #242424 */
+  --rl-accent: light-dark(#A34F00, #FF8200);            /* text-bearing accent, >= 5.7:1 */
+  --rl-on-primary: light-dark(#FFFFFF, #0A0A0A);        /* on primaryColor: 5.71:1 / 7.96:1 */
+  --rl-bg: light-dark(#FFFFFF, #0A0A0A);
+  --rl-surface: light-dark(#FAFAFA, #242424);           /* cards and panels */
+  --rl-elevated: light-dark(#F2F2F2, #303030);
+  --rl-text: light-dark(#1A1A1A, #FFFFFF);
+  --rl-text-secondary: light-dark(#555555, #B8B8B8);    /* 7.46:1 / 7.83:1 on surfaces */
+  --rl-border: light-dark(#D6D6D6, #3A3A3A);
+  --rl-shadow: light-dark(rgb(0 0 0 / 0.14), rgb(0 0 0 / 0.55));
+  --rl-focus: light-dark(#1A1A1A, #FFFFFF);             /* focus ring next to orange fills */
+}
+
+/* Cards: resource cards (rl-card-*) and bulletin announcements (rl-bulletin-*). */
+[class*="st-key-rl-card-"],
+[class*="st-key-rl-bulletin-"] {
+  background: var(--rl-surface);
+  border-color: var(--rl-border) !important;
+  border-radius: 0.75rem;
+}
+
+/* Captions (card metadata, Larry's "Sources" line and notes): Streamlit fades them with
+   opacity 0.6, which also dims links inside them (orange fell to ~3:1). Use the secondary
+   text token instead. data-testid is Streamlit's public test hook; if it changes, captions
+   simply keep Streamlit's default look. */
+[data-testid="stCaptionContainer"] {
+  opacity: 1;
+  color: var(--rl-text-secondary);
+}
+
+/* Primary buttons: dark text on Tennessee Orange (white would be 2.49:1). */
+button[kind="primary"] {
+  color: var(--rl-on-primary);
+}
+button[kind="primary"] * {
+  color: inherit;
+}
+
+/* Visible keyboard focus everywhere (mouse clicks don't show it: :focus-visible). */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[role="tab"]:focus-visible,
+[role="radio"]:focus-visible,
+[role="checkbox"]:focus-visible,
+[role="option"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--rl-accent) !important;
+  outline-offset: 2px;
+}

@@ -28,6 +28,7 @@ WELCOME_MESSAGE = (
 LOADING_MESSAGE = "Larry is checking verified resources..."
 INPUT_PLACEHOLDER = "Ask Larry a question (no resident names or IDs)..."
 ICON = ":material/chat:"
+LAUNCHER_LABEL = "Chat with Larry"
 
 OPEN_KEY = "larry_open"
 HISTORY_KEY = "larry_history"
@@ -101,5 +102,7 @@ def render_larry(ask: Ask) -> None:
         _render_panel(ask)
     else:
         with st.container(key="larry-launcher"):
-            st.button("Larry", icon=ICON, key="larry_launch", type="primary", on_click=_open,
-                      help="Chat with Larry, the ResLink AI assistant")
+            # The label is the button's accessible name; larry.css hides it visually so the
+            # launcher shows only Larry's photo (static/larry.png) in a circle. No `help=`:
+            # larry.css draws the "Chat with Larry" tooltip, and Streamlit's would duplicate it.
+            st.button(LAUNCHER_LABEL, key="larry_launch", type="primary", on_click=_open)

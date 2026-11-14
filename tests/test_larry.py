@@ -56,7 +56,7 @@ def test_larry_starts_closed_with_launcher(monkeypatch):
     at = start(monkeypatch)
     assert at.session_state[OPEN_KEY] is False
     assert "larry_launch" in button_keys(at)
-    assert at.button(key="larry_launch").label == "Larry"
+    assert at.button(key="larry_launch").label == "Chat with Larry"  # accessible name (text hidden by CSS)
     assert "larry_close" not in button_keys(at)
     assert len(at.chat_input) == 0  # no chat input on the dashboard itself
 
