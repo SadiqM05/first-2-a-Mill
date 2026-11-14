@@ -168,3 +168,27 @@ def test_each_question_is_answered_once(monkeypatch):
 
 def test_loading_message_text():
     assert "Larry" in LOADING_MESSAGE
+
+
+# --- retrieval mode (Milestone 3) -------------------------------------------------------------
+
+
+def _sidebar_text(at: AppTest) -> str:
+    return "\n".join(m.value for m in at.sidebar.markdown) + "\n".join(c.value for c in at.sidebar.caption)
+
+
+def test_sidebar_reports_retrieval_mode(monkeypatch):
+    at = start(monkeypatch)
+    assert "Retrieval:" in _sidebar_text(at)
+
+
+def test_missing_semantic_index_falls_back_to_keyword(monkeypatch, tmp_path):
+    monkeypatch.setenv("RESLINK_CHROMA_PATH", str(tmp_path / "no-chroma-here"))
+    at = start(monkeypatch)
+    text = _sidebar_text(at)
+    assert "Retrieval: keyword only" in text and "not built" in text
+    # Larry still answers from keyword retrieval with verified links.
+    open_larry(at)
+    dashboard_links = len(at.get("link_button"))
+    ask(at, "A resident is locked out of their room")
+    assert at.get("link_button")[dashboard_links].proto.url == LOCKOUT_URL

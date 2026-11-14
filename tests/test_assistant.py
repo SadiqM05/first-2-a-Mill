@@ -240,3 +240,11 @@ def test_persistent_rate_limit_reports_code_not_details(retriever):
     assert response.status is Status.ERROR
     assert "_APIError 429" in response.notice
     assert "secret details" not in response.notice
+
+
+def test_system_instruction_requires_direct_answer_for_sufficient():
+    from reslink.assistant import SYSTEM_INSTRUCTION
+
+    text = " ".join(SYSTEM_INSTRUCTION.split())
+    assert "directly answers the user's specific question" in text
+    assert "Merely mentioning the topic is not sufficient" in text

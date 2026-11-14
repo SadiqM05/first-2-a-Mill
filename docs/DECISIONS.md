@@ -30,3 +30,12 @@
 20. **Page-level citations:** document evidence IDs are `resource-id@pN` (PDF page index, not the printed manual page). PDF links get `#page=N`, built from the catalog URL by code.
 21. **Gemini resilience:** one retry with backoff on 429/5xx; failures show exception type + numeric status only. `scripts/run_eval.py` runs the eval set live (1.5 s between calls).
 22. **Catalog scoring fix:** each query word counts once at its strongest field (title > category > description) so "report" no longer double-counts via title + "Reporting" category.
+
+## 2026-11-14 — Milestone 3: hybrid semantic retrieval (approved)
+
+23. **ChromaDB + built-in ONNX all-MiniLM-L6-v2**, no torch. Stays on Python 3.14 (chromadb 1.5.9 / onnxruntime 1.32 wheels verified); installed into the existing `.venv`. Model (79 MB) cached in `~/.cache/chroma` on first `build_index`; the app never triggers the download. Anonymized telemetry disabled.
+24. **What is embedded:** catalog metadata (title, category, description, keywords; no URLs) for every verified resource, plus public PDF chunks. Portal contents are never indexed. Index at `data/index/chroma` (git-ignored), rebuilt from scratch by `python -m scripts.build_index`; a content fingerprint on the collection detects stale indexes.
+25. **Hybrid = reciprocal rank fusion (k=60)**, separately for catalog evidence and document pages. Keyword retrieval unchanged and always included. Semantic contributes its nearest catalog entry (distance ≤ 0.65) and up to 2 pages from its 8 nearest chunks (≤ 0.75). Output: up to 3 catalog + 3 pages. Cutoffs/limits tuned with `scripts/compare_retrieval.py` (docs/EVALUATION.md).
+26. **Semantic similarity never decides support.** Supported/unsupported distances overlap; Gemini's sufficient flag + citation validation remain the gate. Semantic hits only map to existing catalog IDs / indexed chunks; anything else is dropped.
+27. **Fallback:** missing/stale/erroring semantic index → keyword-only (sidebar says why). Retriever cached per process (`st.cache_resource`) keyed on content fingerprint + index file time.
+28. **Stricter insufficient-evidence rule (approved 2026-11-14):** the Gemini instructions now say `sufficient` may be true only when the evidence directly answers the specific question; merely mentioning the topic is not enough. Fixes the weekly-report regression introduced by broader hybrid evidence (verified with 3 live calls; docs/EVALUATION.md).

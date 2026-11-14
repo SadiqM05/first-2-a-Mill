@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CATALOG_PATH = PROJECT_ROOT / "data" / "resources.json"
 DEFAULT_INDEX_PATH = PROJECT_ROOT / "data" / "index" / "chunks.json"
+DEFAULT_CHROMA_PATH = PROJECT_ROOT / "data" / "index" / "chroma"
 DOCUMENTS_DIR = PROJECT_ROOT / "data" / "documents"
 
 
@@ -24,6 +25,7 @@ DOCUMENTS_DIR = PROJECT_ROOT / "data" / "documents"
 class Settings:
     catalog_path: Path
     index_path: Path = DEFAULT_INDEX_PATH
+    chroma_path: Path = DEFAULT_CHROMA_PATH
     gemini_model: str | None = None
     # repr=False so the key never shows up in logs, tracebacks, or the UI.
     gemini_api_key: str | None = field(default=None, repr=False)
@@ -48,9 +50,11 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
     env = os.environ if environ is None else environ
     catalog = _clean(env.get("RESLINK_CATALOG_PATH"))
     index = _clean(env.get("RESLINK_INDEX_PATH"))
+    chroma = _clean(env.get("RESLINK_CHROMA_PATH"))
     return Settings(
         catalog_path=Path(catalog) if catalog else DEFAULT_CATALOG_PATH,
         index_path=Path(index) if index else DEFAULT_INDEX_PATH,
+        chroma_path=Path(chroma) if chroma else DEFAULT_CHROMA_PATH,
         gemini_model=_clean(env.get("GEMINI_MODEL")),
         gemini_api_key=_clean(env.get("GEMINI_API_KEY")),
     )

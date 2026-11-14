@@ -8,9 +8,14 @@ from __future__ import annotations
 
 import math
 import re
-from typing import Protocol
+from typing import TYPE_CHECKING, Hashable, Protocol, TypeVar
 
 from reslink.models import Chunk, Evidence, Resource
+
+if TYPE_CHECKING:
+    from reslink.semantic import SemanticHit
+
+T = TypeVar("T", bound=Hashable)
 
 # Words that carry no signal for matching RA questions to resources.
 STOPWORDS = frozenset(
@@ -91,6 +96,7 @@ class KeywordRetriever:
         # Chunks whose resource isn't in the catalog are ignored: every evidence must be verifiable.
         self.chunks = [c for c in (chunks or []) if c.resource_id in self._by_id]
         self._chunk_tokens = [set(tokenize(c.text)) for c in self.chunks]
+        self._chunk_lookup = {(c.resource_id, c.page, c.chunk_index): c for c in self.chunks}
         n = len(self.chunks)
         df: dict[str, int] = {}
         for tokens in self._chunk_tokens:
@@ -136,7 +142,8 @@ class KeywordRetriever:
         hits.sort(key=lambda pair: (-pair[0], pair[1].title.lower()))
         return [Evidence(resource=r, text=evidence_text(r), score=s) for s, r in hits[:top_k]]
 
-    def retrieve_documents(self, query: str, top_k: int = 3) -> list[Evidence]:
+    def rank_pages(self, query: str) -> list[tuple[tuple[str, int | None], float, list[Chunk]]]:
+        """Keyword-ranked document pages: [((resource_id, page), score, matching chunks)], best first."""
         query_unique = set(tokenize(query))
         if not query_unique or not self.chunks:
             return []
@@ -153,15 +160,143 @@ class KeywordRetriever:
             key = (chunk.resource_id, chunk.page)
             best, first, group = pages.get(key, (0.0, i, []))
             pages[key] = (max(best, score), min(first, i), group + [chunk])
-        ranked = sorted(pages.values(), key=lambda v: (-v[0], v[1]))
-        out: list[Evidence] = []
-        for score, _, group in ranked[:top_k]:
-            group.sort(key=lambda c: c.chunk_index)
-            resource = self._by_id[group[0].resource_id]
-            body = "\n...\n".join(c.text for c in group)
-            text = f"Source: {resource.title}, page {group[0].page}\n{body}"
-            out.append(Evidence(resource, text, score, page=group[0].page, source="document"))
-        return out
+        ranked = sorted(pages.items(), key=lambda kv: (-kv[1][0], kv[1][1]))
+        return [(key, score, group) for key, (score, _, group) in ranked]
+
+    def chunk(self, resource_id: str, page: int | None, chunk_index: int) -> Chunk | None:
+        return self._chunk_lookup.get((resource_id, page, chunk_index))
+
+    def page_evidence(self, resource_id: str, page: int | None, chunks: list[Chunk], score: float) -> Evidence:
+        """One document evidence block for a page, built from the given chunks (deduplicated, in order)."""
+        unique = {c.chunk_index: c for c in chunks}
+        body = "\n...\n".join(unique[i].text for i in sorted(unique))
+        resource = self._by_id[resource_id]
+        text = f"Source: {resource.title}, page {page}\n{body}"
+        return Evidence(resource, text, score, page=page, source="document")
+
+    def retrieve_documents(self, query: str, top_k: int = 3) -> list[Evidence]:
+        return [
+            self.page_evidence(rid, page, group, score)
+            for (rid, page), score, group in self.rank_pages(query)[:top_k]
+        ]
 
     def retrieve(self, query: str, top_k: int = 3) -> list[Evidence]:
         return self.retrieve_catalog(query, top_k) + self.retrieve_documents(query, top_k)
+
+
+# --- Hybrid retrieval ---------------------------------------------------------------------
+
+RRF_K = 60  # standard reciprocal-rank-fusion constant; dampens the advantage of rank 1
+
+
+class SemanticSearch(Protocol):
+    def search(
+        self, query: str, n: int = 8, max_distance: float = ..., kind: str | None = None
+    ) -> list[SemanticHit]: ...
+
+
+def rrf_fuse(rankings: list[list[T]]) -> list[tuple[T, float]]:
+    """Reciprocal rank fusion: score(item) = sum over rankings of 1 / (RRF_K + rank).
+
+    Items found by several rankers outrank items found by one. Ties break by the best
+    rank the item achieved, then by first appearance, so the order is deterministic.
+    """
+    scores: dict[T, float] = {}
+    best_rank: dict[T, int] = {}
+    order: dict[T, int] = {}
+    for ranking in rankings:
+        for rank, item in enumerate(ranking, start=1):
+            scores[item] = scores.get(item, 0.0) + 1.0 / (RRF_K + rank)
+            best_rank[item] = min(best_rank.get(item, rank), rank)
+            order.setdefault(item, len(order))
+    return sorted(scores.items(), key=lambda kv: (-kv[1], best_rank[kv[0]], order[kv[0]]))
+
+
+class HybridRetriever:
+    """Keyword + semantic retrieval merged with reciprocal rank fusion.
+
+    Catalog evidence and document evidence are fused separately and stay distinct.
+    Semantic hits are mapped onto existing catalog IDs / indexed chunks; anything that
+    doesn't resolve to a verified catalog resource is dropped. If semantic search is
+    unavailable or raises, results are exactly the keyword retriever's.
+    """
+
+    def __init__(
+        self,
+        keyword: KeywordRetriever,
+        semantic: SemanticSearch | None = None,
+        *,
+        max_distance: float | None = None,
+        catalog_max_distance: float | None = None,
+        doc_top_k: int = 3,
+        keyword_pages: int = 3,
+        semantic_catalog_n: int = 1,
+        semantic_chunk_n: int = 8,
+        semantic_pages: int = 2,
+    ):
+        # Defaults chosen with scripts/compare_retrieval.py: same recall as larger settings,
+        # roughly half the off-target evidence (see docs/EVALUATION.md).
+        self.keyword = keyword
+        self.semantic = semantic
+        self.max_distance = max_distance  # document chunks
+        self.catalog_max_distance = catalog_max_distance  # catalog metadata
+        self.doc_top_k = doc_top_k  # max document pages returned (after fusion)
+        self.keyword_pages = keyword_pages  # keyword page candidates entering fusion
+        self.semantic_catalog_n = semantic_catalog_n  # semantic catalog candidates entering fusion
+        self.semantic_chunk_n = semantic_chunk_n  # nearest chunks fetched...
+        self.semantic_pages = semantic_pages  # ...grouped into at most this many page candidates
+        self.last_mode = "hybrid" if semantic is not None else "keyword"
+
+    def _keyword_only(self, query: str, top_k: int, mode: str) -> list[Evidence]:
+        self.last_mode = mode
+        return self.keyword.retrieve(query, top_k)
+
+    def _search(self, query: str, kind: str, n: int) -> list[SemanticHit]:
+        kwargs = {"n": n, "kind": kind}
+        limit = self.catalog_max_distance if kind == "catalog" else self.max_distance
+        if limit is not None:
+            kwargs["max_distance"] = limit
+        hits = self.semantic.search(query, **kwargs)
+        # Only hits that resolve to a verified catalog resource (and the requested kind) count.
+        return [h for h in hits if h.kind == kind and h.resource_id in self.keyword._by_id]
+
+    def retrieve(self, query: str, top_k: int = 3) -> list[Evidence]:
+        if self.semantic is None or not query.strip():
+            return self._keyword_only(query, top_k, "keyword")
+        try:
+            catalog_hits = self._search(query, "catalog", self.semantic_catalog_n)
+            chunk_hits = self._search(query, "document", self.semantic_chunk_n)
+        except Exception:  # broken index, model error, etc.: never break answering
+            return self._keyword_only(query, top_k, "keyword (semantic error)")
+        self.last_mode = "hybrid"
+        by_id = self.keyword._by_id
+
+        # Catalog: fuse keyword ranking with semantic catalog-metadata ranking.
+        kw_catalog = [e.resource.id for e in self.keyword.retrieve_catalog(query, top_k)]
+        sem_catalog = list(dict.fromkeys(h.resource_id for h in catalog_hits))
+        catalog = [
+            Evidence(resource=by_id[rid], text=evidence_text(by_id[rid]), score=score)
+            for rid, score in rrf_fuse([kw_catalog, sem_catalog])[:top_k]
+        ]
+
+        # Documents: fuse keyword page ranking with semantic page ranking (page = citation unit).
+        kw_pages = self.keyword.rank_pages(query)[: self.keyword_pages]
+        page_chunks: dict[tuple[str, int | None], list[Chunk]] = {key: list(g) for key, _, g in kw_pages}
+        sem_pages: list[tuple[str, int | None]] = []
+        for h in chunk_hits:
+            if h.chunk_index is None:
+                continue
+            chunk = self.keyword.chunk(h.resource_id, h.page, h.chunk_index)
+            if chunk is None:  # index and chunks.json disagree: ignore the hit
+                continue
+            key = (h.resource_id, h.page)
+            if key not in sem_pages:
+                if len(sem_pages) >= self.semantic_pages:
+                    continue
+                sem_pages.append(key)
+            page_chunks.setdefault(key, []).append(chunk)
+        documents = [
+            self.keyword.page_evidence(rid, page, page_chunks[(rid, page)], score)
+            for (rid, page), score in rrf_fuse([[k for k, _, _ in kw_pages], sem_pages])[: self.doc_top_k]
+        ]
+        return catalog + documents

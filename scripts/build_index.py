@@ -4,19 +4,22 @@ Usage:  python -m scripts.build_index [--refresh]
 
 Downloads each catalog resource with content_type "pdf" into data/documents/
 (skipped if already present unless --refresh), extracts text per page, chunks it,
-and writes data/index/chunks.json. Portals and webpages are skipped.
+and writes data/index/chunks.json. Then (re)builds the ChromaDB semantic index in
+data/index/chroma from catalog metadata + those chunks. Portals and webpages are never
+ingested (portals contribute catalog metadata only). Stop the app before rebuilding.
 """
 
 from __future__ import annotations
 
 import argparse
 import sys
+import time
 from pathlib import Path
 
 import requests
 
 from reslink.catalog import CatalogError, load_catalog
-from reslink.config import DEFAULT_CATALOG_PATH, DEFAULT_INDEX_PATH, DOCUMENTS_DIR
+from reslink.config import DEFAULT_CATALOG_PATH, DEFAULT_CHROMA_PATH, DEFAULT_INDEX_PATH, DOCUMENTS_DIR
 from reslink.ingest import chunk_pages, extract_pdf_pages, save_index
 from reslink.models import Chunk, Resource
 
@@ -38,6 +41,7 @@ def download_pdf(resource: Resource, dest: Path, refresh: bool) -> Path:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--refresh", action="store_true", help="re-download documents")
+    parser.add_argument("--keyword-only", action="store_true", help="skip the ChromaDB semantic index")
     args = parser.parse_args(argv)
 
     try:
@@ -69,6 +73,24 @@ def main(argv: list[str] | None = None) -> int:
 
     save_index(chunks, resources, DEFAULT_INDEX_PATH)
     print(f"wrote  {DEFAULT_INDEX_PATH} ({len(chunks)} chunks, {failures} failure(s))")
+
+    if args.keyword_only:
+        print("skip   semantic index (--keyword-only)")
+    else:
+        try:
+            from reslink.semantic import SemanticIndex, build_documents
+
+            start = time.time()
+            SemanticIndex.build(DEFAULT_CHROMA_PATH, resources, chunks)
+            n = len(build_documents(resources, chunks))
+            print(f"wrote  {DEFAULT_CHROMA_PATH} ({n} embedded items: catalog metadata + chunks, "
+                  f"{time.time() - start:.1f}s)")
+        except ImportError:
+            failures += 1
+            print("FAIL   semantic index: chromadb not installed (pip install -r requirements.txt)", file=sys.stderr)
+        except Exception as exc:
+            failures += 1
+            print(f"FAIL   semantic index: {type(exc).__name__}: {exc}", file=sys.stderr)
     return 1 if failures else 0
 
 

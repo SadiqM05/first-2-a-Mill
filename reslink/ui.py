@@ -23,6 +23,7 @@ def render_sidebar_status(
     resource_count: int | None,
     chunk_count: int = 0,
     index_warnings: list[str] | None = None,
+    retrieval_status: str | None = None,
 ) -> None:
     with st.sidebar:
         st.header("Status")
@@ -34,6 +35,12 @@ def render_sidebar_status(
             st.write(f"Indexed document passages: {chunk_count}")
         else:
             st.write("Document index: not built (run `python -m scripts.build_index`)")
+        if retrieval_status is not None:
+            if retrieval_status == "ready":
+                st.write("Retrieval: hybrid (keyword + semantic)")
+            else:
+                st.write("Retrieval: keyword only")
+                st.caption(f"Semantic search unavailable: {retrieval_status}")
         for warning in index_warnings or []:
             st.warning(warning)
         # Never display the key itself, only whether one is configured.
