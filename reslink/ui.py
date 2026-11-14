@@ -92,11 +92,3 @@ def render_response(response: AssistantResponse) -> None:
             _render_resource_card(
                 resource, tuple(c for c in response.citations if c.resource.id == resource.id)
             )
-
-
-def render_chat_history(history: list[tuple[str, AssistantResponse]]) -> None:
-    for question, response in history:
-        with st.chat_message("user"):
-            st.write(question)
-        with st.chat_message("assistant"):
-            render_response(response)

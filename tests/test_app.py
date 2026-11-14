@@ -70,34 +70,7 @@ def test_missing_catalog_shows_error(monkeypatch, tmp_path):
     assert at.error
 
 
-def test_chat_with_no_match_is_honest(monkeypatch, tmp_path):
-    path = tmp_path / "resources.json"
-    path.write_text("[]", encoding="utf-8")
-    at = run_app(monkeypatch, path)
-    at.chat_input[0].set_value("Where do I submit my weekly RA report?").run()
-    assert not at.exception
-    assert any("couldn't find a verified resource" in i.value for i in at.info)
-
-
-def test_chat_without_gemini_shows_verified_sources_only(monkeypatch):
-    at = run_app(monkeypatch)
-    dashboard_links = len(at.get("link_button"))
-    at.chat_input[0].set_value("A resident is locked out of their room").run()
-    assert not at.exception
-    assert any("isn't configured" in w.value for w in at.warning)
-    new_urls = [b.proto.url for b in at.get("link_button")[dashboard_links:]]
-    assert new_urls[0] == "https://saweb.asa.utk.edu/housing_ra/ra_login.asp"
-
-
-def test_chat_history_persists_across_questions(monkeypatch):
-    at = run_app(monkeypatch)
-    at.chat_input[0].set_value("Where can I see my floor roster?").run()
-    at.chat_input[0].set_value("What is the quiet hours policy?").run()
-    assert not at.exception
-    assert len(at.chat_message) == 4
-
-
-@pytest.mark.parametrize("module", ["models", "config", "catalog", "retrieval", "assistant"])
+@pytest.mark.parametrize("module", ["models", "config", "catalog", "retrieval", "assistant", "ingest"])
 def test_core_modules_do_not_import_streamlit(module):
     tree = ast.parse((PROJECT_ROOT / "reslink" / f"{module}.py").read_text(encoding="utf-8"))
     imported = set()

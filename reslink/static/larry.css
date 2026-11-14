@@ -1,0 +1,80 @@
+/*
+ * Larry floating chat widget.
+ * Scoped ONLY to our own keyed containers: Streamlit documents that st.container(key="x")
+ * adds the CSS class "st-key-x". No Streamlit-internal class names or test IDs are used;
+ * the one structural assumption (the :has() height rule below) degrades safely.
+ * position: fixed takes both elements out of the page flow, so opening/closing Larry
+ * doesn't shift or scroll the dashboard.
+ *
+ * Theme: no hardcoded colors. Streamlit sets `color-scheme: light|dark` on the app to match
+ * the user's Light/Dark/System choice, so the `Canvas` system color resolves to a light or
+ * dark surface accordingly and updates instantly on toggle. Text color is inherited from
+ * Streamlit; borders are derived from it with color-mix(currentColor). Buttons, chat
+ * messages and the chat input are native Streamlit widgets and theme themselves.
+ */
+
+.st-key-larry-launcher {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1000;
+  width: auto !important;
+}
+
+.st-key-larry-panel {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1000;
+  width: min(400px, calc(100vw - 2rem));
+  max-height: calc(100dvh - 3rem);
+  padding: 0.75rem 0.9rem 0.6rem;
+  background: Canvas;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px color-mix(in srgb, black 30%, transparent);
+  overflow: hidden;
+}
+
+/* Header row: title on the left, close button on the right. */
+.st-key-larry-header {
+  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  padding-bottom: 0.4rem;
+}
+
+/* Conversation area: independently scrollable. */
+.st-key-larry-messages {
+  overflow-y: auto;
+  overscroll-behavior: contain; /* scrolling the chat never scrolls the dashboard */
+}
+
+/*
+ * Responsive height. st.container(height=440) puts its fixed height on the element that
+ * directly wraps our keyed container, so we size "the parent of .st-key-larry-messages"
+ * via :has(). This still keys off our own class only. If Streamlit's wrapper structure
+ * ever changes, this rule simply stops matching and the panel falls back to 440px.
+ * ~17rem (16rem on phones) = panel padding + header + chat input + bottom margin
+ * + ~4rem clearance so the panel never slides under Streamlit's top bar (which stays on top).
+ */
+:has(> .st-key-larry-messages) {
+  flex: 0 0 auto !important;
+  height: max(120px, min(440px, calc(100dvh - 17rem))) !important;
+}
+
+/* Phones: panel uses most of the screen, still inside the viewport. */
+@media (max-width: 640px) {
+  .st-key-larry-panel {
+    right: 0.5rem;
+    left: 0.5rem;
+    bottom: 0.5rem;
+    width: auto;
+    max-height: calc(100dvh - 1rem);
+  }
+  :has(> .st-key-larry-messages) {
+    height: max(120px, calc(100dvh - 16rem)) !important;
+  }
+  .st-key-larry-launcher {
+    right: 1rem;
+    bottom: 1rem;
+  }
+}

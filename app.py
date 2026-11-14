@@ -7,6 +7,7 @@ from reslink.assistant import GeminiGenerator, answer_question
 from reslink.catalog import CatalogError, group_by_category, load_catalog
 from reslink.config import load_env_file, load_settings
 from reslink.ingest import load_index
+from reslink.larry import render_larry
 from reslink.retrieval import KeywordRetriever
 
 st.set_page_config(page_title="ResLink AI", page_icon="📚", layout="wide")
@@ -38,10 +39,10 @@ generator = (
 )
 retriever = KeywordRetriever(resources, chunks)
 
-history = st.session_state.setdefault("history", [])
-question = st.chat_input("What do you need help with?")
-if question:
-    with st.spinner("Looking up verified resources..."):
-        history.append((question, answer_question(question, retriever, generator)))
 
-ui.render_chat_history(history)
+def ask(question: str):
+    """The only bridge from the UI to retrieval + Gemini (logic unchanged)."""
+    return answer_question(question, retriever, generator)
+
+
+render_larry(ask)
