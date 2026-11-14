@@ -83,3 +83,10 @@ def test_core_modules_do_not_import_streamlit(module):
         elif isinstance(node, ast.ImportFrom) and node.module:
             imported.add(node.module.split(".")[0])
     assert "streamlit" not in imported
+
+
+def test_erezlife_link_on_ra_portals_tab(monkeypatch):
+    at = run_app(monkeypatch)
+    ra_portals = next(t for t in at.tabs if t.label == "RA Portals")
+    buttons = {b.proto.label: b.proto.url for b in ra_portals.get("link_button")}
+    assert buttons["eRezLife \u2014 RA Reporting & Programming"] == "https://utk.erezlife.com/"

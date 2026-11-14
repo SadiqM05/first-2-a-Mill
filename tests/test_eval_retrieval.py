@@ -61,7 +61,7 @@ def test_expected_statuses_are_valid():
 
 def test_live_subset_is_small():
     # Gemini quota budget; privacy-blocked questions make no API call.
-    for tag in ("live", "live_m6"):
+    for tag in ("live", "live_m6", "live_erez"):
         assert sum(1 for c in ALL_CASES if c.get(tag) and not c.get("privacy")) <= 8, tag
 
 
@@ -108,8 +108,27 @@ def test_generic_resident_question_does_not_pull_roster():
 
 def test_weekly_report_does_not_match_incident_form():
     # "report" appears in both the incident form title and the Reporting category;
-    # it must not be double-counted into a false match.
-    assert RETRIEVER.retrieve_catalog("Where do I submit my weekly RA report?") == []
+    # it must not be double-counted into a false match. Weekly reports go to eRezLife.
+    ids = [e.resource.id for e in RETRIEVER.retrieve_catalog("Where do I submit my weekly RA report?")]
+    assert ids == ["erezlife"]
+
+
+@pytest.mark.parametrize("question", [
+    "Where do I submit my weekly RA report?", "Where do I submit daily logs?",
+    "How do I submit a program proposal?", "Where do I log a Vol Chat?", "Where do I record a suite visit?",
+])
+def test_erezlife_tasks_rank_erezlife_first(question):
+    assert RETRIEVER.retrieve_catalog(question)[0].resource.id == "erezlife"
+
+
+@pytest.mark.parametrize("question, expected", [
+    ("Where do I submit an incident report?", "incident-report-form"),
+    ("A resident needs something repaired. Where do I start?", "maintenance-request-portal"),
+    ("Where can I see my floor roster?", "starrez-roster"),
+])
+def test_erezlife_does_not_capture_other_portals(question, expected):
+    ids = [e.resource.id for e in RETRIEVER.retrieve_catalog(question)]
+    assert ids[0] == expected and "erezlife" not in ids
 
 
 # --- hybrid -------------------------------------------------------------------------------

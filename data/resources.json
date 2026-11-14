@@ -27,6 +27,15 @@
     "keywords": ["roster", "resident roster", "room assignments", "starrez", "floor list"]
   },
   {
+    "id": "erezlife",
+    "title": "eRezLife — RA Reporting & Programming",
+    "category": "ra_portals",
+    "url": "https://utk.erezlife.com/",
+    "content_type": "portal",
+    "description": "eRezLife is the portal Resident Assistants use to complete and submit administrative reports, programming documentation, and resident engagement records, including weekly reports, daily logs, program proposals, Vol Chats, and suite visits. Requires signing in through UT's Central Authentication Service (NetID).",
+    "keywords": ["erezlife", "erez life", "weekly report", "weekly reports", "daily log", "daily logs", "program proposal", "program proposals", "vol chat", "vol chats", "suite visit", "suite visits", "programming documentation"]
+  },
+  {
     "id": "incident-report-form",
     "title": "Incident Report Form (Maxient)",
     "category": "reporting",
