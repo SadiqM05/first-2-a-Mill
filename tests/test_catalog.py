@@ -170,3 +170,35 @@ def test_group_by_category_sorts_titles():
 def test_real_catalog_file_is_utf8_json_array():
     data = json.loads(DEFAULT_CATALOG_PATH.read_text(encoding="utf-8"))
     assert isinstance(data, list)
+
+
+# --- transcriptions (Milestone 4) ----------------------------------------------------------------
+
+TRANSCRIPTION = {"id": "manual", "title": "PLACEHOLDER manual", "category": "procedures",
+                 "content_type": "transcription", "source_path": "data/procedures/x.md"}
+
+
+def test_transcription_without_url_is_valid():
+    [r] = parse_catalog([TRANSCRIPTION])
+    assert r.url is None and r.is_transcription and r.source_path == "data/procedures/x.md"
+    assert r.category_label == "Procedures"
+
+
+def test_transcription_must_not_have_url():
+    errors = errors_for([{**TRANSCRIPTION, "url": "https://example.org/x"}])
+    assert any("must not have a url" in e for e in errors)
+
+
+def test_transcription_requires_source_path():
+    errors = errors_for([{k: v for k, v in TRANSCRIPTION.items() if k != "source_path"}])
+    assert any("requires 'source_path'" in e for e in errors)
+
+
+def test_source_path_only_for_transcriptions():
+    errors = errors_for([entry(source_path="x.md")])
+    assert any("only allowed for content_type 'transcription'" in e for e in errors)
+
+
+def test_non_transcription_still_requires_https_url():
+    assert any("'url' is required" in e for e in errors_for([entry(url=None)]))
+    assert any("https://" in e for e in errors_for([entry(url="http://example.org/x")]))

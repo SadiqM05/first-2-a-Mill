@@ -55,16 +55,23 @@ def render_catalog_error(error: CatalogError) -> None:
 
 
 def _render_resource_card(resource: Resource, citations: tuple[Citation, ...] = ()) -> None:
-    pages = sorted({c.page for c in citations if c.page is not None})
+    sections = [c for c in citations if c.section]
+    pages = sorted({c.page for c in citations if c.page is not None and not c.section})
     # Link comes from the validated catalog entry (plus a page anchor for cited PDF pages).
     link = Citation(resource, pages[0] if pages else None).link
     with st.container(border=True):
-        st.link_button(resource.title, link)
+        if link:
+            st.link_button(resource.title, link)
+        else:  # e.g. a manual transcription: never invent a link
+            st.markdown(f"**{resource.title}**")
         if resource.description:
             st.write(resource.description)
+        for citation in sections:
+            st.caption(f"Cited: {citation.label}")
         login = " · sign-in required" if resource.requires_login else ""
         cited = f" · cited page(s): {', '.join(map(str, pages))}" if pages else ""
-        st.caption(f"{resource.category_label} · {resource.content_type}{login}{cited} · {resource.url}")
+        where = resource.url if resource.url else "no public link · not independently verified as current"
+        st.caption(f"{resource.category_label} · {resource.content_type}{login}{cited} · {where}")
 
 
 def render_dashboard(grouped: dict[str, list[Resource]]) -> None:
@@ -92,6 +99,8 @@ def render_response(response: AssistantResponse) -> None:
             st.info(response.notice)
     if response.answer:
         st.markdown(response.answer)
+    for caveat in response.caveats:  # source-quality notices added by code, not the model
+        st.warning(caveat)
     if response.resources:
         label = "Sources" if response.status is Status.GROUNDED else "Related verified resources"
         st.caption(label)

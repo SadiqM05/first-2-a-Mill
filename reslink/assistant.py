@@ -17,6 +17,7 @@ from collections.abc import Iterable
 from typing import Any, Protocol
 
 from reslink.models import AssistantResponse, Citation, Evidence, Resource, Status
+from reslink.privacy import detect_personal_info
 from reslink.retrieval import Retriever
 
 SYSTEM_INSTRUCTION = """\
@@ -36,7 +37,22 @@ Rules:
 6. Keep answers short: 1-5 sentences or a short list. If a resource requires sign-in, say so.
    When evidence comes from a document, you may mention the page number given in its
    "Source:" line (e.g. "page 4"); ignore page numbers printed inside the text itself.
+   Exception: a complete procedure walkthrough (rule 8) may be as long as the procedure.
 7. You cannot submit forms, take actions, or interpret or override university policy.
+8. Procedures (evidence whose Source line has a section sign, e.g. "§ Checking IN Packages"):
+   - If the user asks how to do the whole task, give every documented step in the original order
+     as a numbered list, keeping sub-steps and "Manual note" text. Do not skip, merge, reorder,
+     or summarize away required steps.
+   - If the user asks about one specific step, field, value, or detail, answer only that, directly,
+     and name the section. Do not reproduce the entire procedure.
+   - Cite procedures by section, e.g. "(§ Checking IN Packages, pp. 30-32)".
+9. Never invent missing steps, fees, amounts, deadlines, time limits, or form fields. If the evidence
+   says "INCOMPLETE SOURCE", say plainly which part is missing. If a requested step is not in the
+   evidence, set sufficient to false.
+10. Template text in procedures (e.g. "Please charge resident's name (UT ID # and room #) ...") must
+    be reproduced with its placeholders exactly; never fill placeholders in with real-looking values.
+11. Never ask the user for, or repeat, a real person's name, ID number, room number, birthday, phone
+    number, or email. Explain what information a procedure requires instead.
 """
 
 RESPONSE_SCHEMA: dict[str, Any] = {
@@ -69,6 +85,18 @@ NOTICE_UNCITED = (
     "I couldn't tie an answer to a verified source, so I'm not showing one. "
     "These verified resources may be related."
 )
+NOTICE_PRIVACY = (
+    "Your message looks like it contains personal information ({found}), so Larry didn't send it "
+    "anywhere. Please ask again without resident names, ID numbers, phone numbers, or email "
+    "addresses, for example: \"How do I charge an excessive lockout?\" "
+    "(This check only catches obvious patterns.)"
+)
+CAVEAT_UNVERIFIED = (
+    "From a transcription of the {title}, not independently verified as current. "
+    "Follow the instructions of your headstaff if they differ."
+)
+CAVEAT_INCOMPLETE = "Incomplete source (§ {section}): {text}"
+CAVEAT_REVIEW = "Flagged for review (§ {section}): {text}"
 
 
 RETRIES = 1
@@ -142,6 +170,42 @@ def strip_urls(text: str) -> str:
     return _BARE_URL.sub("[link removed]", text).strip()
 
 
+_INLINE_STEP = re.compile(r"(?<=\s)(\d{1,2})\.\s")
+
+
+def format_steps(answer: str) -> str:
+    """Put an inline numbered procedure ("... 1. Log in. 2. Click ...") on separate lines.
+
+    Formatting only: no words are added, removed, or reordered. It applies only when the
+    numbers form an in-order run 1, 2, 3, ... written inline, and only to that run. Inline
+    sub-bullets (" - ") inside the run become indented list items.
+    """
+    if re.search(r"^\s*1\.\s", answer, flags=re.M):
+        return answer  # already a proper list
+    matches, expected = [], 1
+    for m in _INLINE_STEP.finditer(answer):
+        # "Skip to step 7." / "proceed to step 6." are references, not step markers.
+        if re.search(r"\bsteps?\s+$", answer[max(0, m.start() - 8) : m.start()], flags=re.I):
+            continue
+        if int(m.group(1)) == expected:
+            matches.append(m)
+            expected += 1
+    if len(matches) < 3:
+        return answer
+    start = matches[0].start()
+    head, body = answer[:start].rstrip(), answer[start:]
+    offset = start
+    # Insert a line break before every step marker in the run (positions relative to body).
+    pieces, last = [], 0
+    for m in matches:
+        pieces.append(body[last : m.start() - offset].rstrip())
+        last = m.start() - offset
+    pieces.append(body[last:])
+    lines = [p for p in pieces if p]
+    lines = [re.sub(r"\s+-\s+(?=\S)", "\n   - ", line) for line in lines]
+    return (head + "\n\n" if head else "") + "\n".join(lines)
+
+
 def parse_model_output(raw: str) -> tuple[bool, str, list[str]]:
     """Validate the model's JSON. Raises ValueError if it doesn't match the schema."""
     data = json.loads(raw)
@@ -164,6 +228,11 @@ def answer_question(
     question = question.strip()
     if not question:
         return AssistantResponse(Status.INSUFFICIENT_EVIDENCE, notice=NOTICE_EMPTY_QUESTION)
+
+    # Obvious personal information never reaches retrieval or Gemini (not a comprehensive filter).
+    found = detect_personal_info(question)
+    if found:
+        return AssistantResponse(Status.INSUFFICIENT_EVIDENCE, notice=NOTICE_PRIVACY.format(found=", ".join(found)))
 
     evidence = retriever.retrieve(question, top_k=top_k)
     if not evidence:
@@ -193,8 +262,9 @@ def answer_question(
             notice=NOTICE_AI_FAILED.format(reason="unreadable response"),
         )
 
-    citations = resolve_citations(cited_ids, evidence)
-    answer = strip_urls(answer)
+    cited = cited_evidence(cited_ids, evidence)
+    citations = tuple(_citation(e) for e in cited)
+    answer = format_steps(strip_urls(answer))
 
     if not sufficient:
         return AssistantResponse(
@@ -205,8 +275,12 @@ def answer_question(
     return AssistantResponse(
         Status.GROUNDED,
         answer=answer,
-        resources=_unique_resources(c.resource for c in citations),
+        # Cited sources first, then verified resources the cited procedures use (catalog IDs only).
+        resources=_unique_resources(
+            [c.resource for c in citations] + [r for e in cited for r in e.related]
+        ),
         citations=citations,
+        caveats=source_caveats(cited),
     )
 
 
@@ -217,12 +291,34 @@ def _unique_resources(resources: Iterable[Resource]) -> tuple[Resource, ...]:
     return tuple(seen.values())
 
 
-def resolve_citations(cited_ids: list[str], evidence: list[Evidence]) -> tuple[Citation, ...]:
-    """Map model-cited IDs onto retrieved evidence. IDs that weren't retrieved are dropped."""
+def _citation(e: Evidence) -> Citation:
+    return Citation(resource=e.resource, page=e.page, section=e.section, page_end=e.page_end)
+
+
+def cited_evidence(cited_ids: list[str], evidence: list[Evidence]) -> list[Evidence]:
+    """Retrieved evidence the model cited, in citation order. IDs that weren't retrieved are dropped."""
     by_id = {e.evidence_id: e for e in evidence}
-    out: dict[str, Citation] = {}
+    out: dict[str, Evidence] = {}
     for cid in cited_ids:
         e = by_id.get(cid.strip())
         if e is not None:
-            out.setdefault(e.evidence_id, Citation(resource=e.resource, page=e.page))
-    return tuple(out.values())
+            out.setdefault(e.evidence_id, e)
+    return list(out.values())
+
+
+def resolve_citations(cited_ids: list[str], evidence: list[Evidence]) -> tuple[Citation, ...]:
+    """Map model-cited IDs onto retrieved evidence. IDs that weren't retrieved are dropped."""
+    return tuple(_citation(e) for e in cited_evidence(cited_ids, evidence))
+
+
+def source_caveats(cited: list[Evidence]) -> tuple[str, ...]:
+    """Source-quality notices for cited evidence, decided by code (never by the model)."""
+    caveats: list[str] = []
+    for title in dict.fromkeys(e.resource.title for e in cited if e.resource.is_transcription):
+        caveats.append(CAVEAT_UNVERIFIED.format(title=title))
+    for e in cited:
+        if e.incomplete:
+            caveats.append(CAVEAT_INCOMPLETE.format(section=e.section, text=e.incomplete))
+        for note in e.review:
+            caveats.append(CAVEAT_REVIEW.format(section=e.section, text=note))
+    return tuple(caveats)

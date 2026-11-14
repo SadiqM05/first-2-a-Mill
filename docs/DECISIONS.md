@@ -39,3 +39,14 @@
 26. **Semantic similarity never decides support.** Supported/unsupported distances overlap; Gemini's sufficient flag + citation validation remain the gate. Semantic hits only map to existing catalog IDs / indexed chunks; anything else is dropped.
 27. **Fallback:** missing/stale/erroring semantic index → keyword-only (sidebar says why). Retriever cached per process (`st.cache_resource`) keyed on content fingerprint + index file time.
 28. **Stricter insufficient-evidence rule (approved 2026-11-14):** the Gemini instructions now say `sufficient` may be true only when the evidence directly answers the specific question; merely mentioning the topic is not enough. Fixes the weekly-report regression introduced by broader hybrid evidence (verified with 3 live calls; docs/EVALUATION.md).
+
+## 2026-11-14 — Milestone 4: procedures knowledge base (approved)
+
+29. **Front Desk Manual transcription** indexed from `data/procedures/residence_hall_front_desk_knowledge_base.md`: `##` = group with required page range, `###` = one procedure (one whole chunk, never split), group intro = "… — Overview" unit, group without `###` = one unit. Bodies stored verbatim; parsed live on app start (edits apply immediately; semantic index flagged stale until rebuilt).
+30. **Catalog extension:** category `procedures`; content type `transcription` = the only type with no URL (must have none) and a required `source_path`. All other types keep the https URL rule. Dashboard card shows no link.
+31. **Citations:** procedure evidence IDs `front-desk-manual#<section-slug>`; citations render "Front Desk Residence Hall Manual, § Section, pp. X–Y" with no link. Retrieval groups by citation unit (PDF page or procedure section); PDF behavior unchanged.
+32. **Trust signals by code, not model:** every cited transcription adds "not independently verified as current"; "Source limitation" text → "Incomplete source" notice; questionable passages flagged in the sidecar `.meta.json` → "Flagged for review". The Markdown is never corrected (docs/SOURCE_REVIEW.md).
+33. **Links:** related verified resources attached per procedure via sidecar catalog IDs only. The transcription's housing.utk.edu URL is unverified (403 to automated checks) → replaced in evidence, never linked; lockout procedures link the verified Lockout Card Access portal.
+34. **Prompt rules:** full walkthrough → all steps in order with sub-steps/notes; specific question → answer only that; never invent steps/fees/deadlines/fields; keep template placeholders; never request or repeat personal details. Inline numbered answers are re-lined by code (formatting only, words unchanged).
+35. **Privacy check:** obvious IDs/SSNs/emails/phones block retrieval and Gemini and are redacted from session history. Explicitly not comprehensive.
+36. **Hybrid tuning:** semantic page candidates 2 → 1 (fixed a PDF regression caused by procedure units; best R@3). A heading-weight boost was tried and rejected.

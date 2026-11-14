@@ -68,7 +68,7 @@ def test_launcher_opens_panel_with_header_and_welcome(monkeypatch):
     assert "larry_launch" not in button_keys(at)
     assert "**Larry**" in all_markdown(at) and "ResLink AI Assistant" in all_markdown(at)
     assert WELCOME_MESSAGE in all_markdown(at)
-    assert at.chat_input(key="larry_input").placeholder == "Ask Larry a question..."
+    assert at.chat_input(key="larry_input").placeholder.startswith("Ask Larry a question")
 
 
 def test_close_button_minimizes_panel(monkeypatch):
@@ -192,3 +192,24 @@ def test_missing_semantic_index_falls_back_to_keyword(monkeypatch, tmp_path):
     dashboard_links = len(at.get("link_button"))
     ask(at, "A resident is locked out of their room")
     assert at.get("link_button")[dashboard_links].proto.url == LOCKOUT_URL
+
+
+# --- Milestone 4: procedures tab and privacy -----------------------------------------------------
+
+
+def test_dashboard_has_procedures_tab_and_manual_without_link(monkeypatch):
+    at = start(monkeypatch)
+    assert any(t.label == "Procedures" for t in at.tabs)
+    assert any("Front Desk Residence Hall Manual" in m.value for m in at.markdown)
+    assert not any("Front Desk" in b.label for b in at.get("link_button"))  # never a link
+    assert any("no public link" in c.value for c in at.caption)
+
+
+def test_personal_info_is_blocked_and_redacted_in_history(monkeypatch):
+    at = open_larry(start(monkeypatch))
+    ask(at, "Charge John Smith, UT ID 123456789, room 214 for an excessive lockout")
+    assert any("personal information" in i.value for i in at.info)
+    [(stored, _)] = at.session_state[HISTORY_KEY]
+    assert "123456789" not in stored and "[9-digit ID number removed]" in stored
+    user_texts = [m.markdown[0].value for m in at.chat_message if m.name == "user"]
+    assert all("123456789" not in t for t in user_texts)

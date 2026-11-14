@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -12,10 +13,18 @@ CATEGORIES: dict[str, str] = {
     "programming": "Programming",
     "policies": "Policies",
     "ra_portals": "RA Portals",
+    "procedures": "Procedures",
 }
 
 # "portal" = sign-in-only system: linkable, but its content can't be read or indexed.
-CONTENT_TYPES: tuple[str, ...] = ("webpage", "pdf", "form", "portal")
+# "transcription" = a local Markdown transcription with no public URL (e.g. photographed manual
+#   pages). Its text is indexed from `source_path`; it is never shown as a clickable link.
+CONTENT_TYPES: tuple[str, ...] = ("webpage", "pdf", "form", "portal", "transcription")
+
+
+def slugify(text: str) -> str:
+    """Stable, readable ID fragment: 'Checking IN Packages' -> 'checking-in-packages'."""
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
 @dataclass(frozen=True)
@@ -25,10 +34,11 @@ class Resource:
     id: str
     title: str
     category: str
-    url: str
+    url: str | None  # None only for content_type "transcription"
     content_type: str = "webpage"
     description: str = ""
     keywords: tuple[str, ...] = field(default_factory=tuple)
+    source_path: str | None = None  # transcriptions only: repo-relative Markdown path
 
     @property
     def category_label(self) -> str:
@@ -38,15 +48,43 @@ class Resource:
     def requires_login(self) -> bool:
         return self.content_type == "portal"
 
+    @property
+    def is_transcription(self) -> bool:
+        return self.content_type == "transcription"
+
 
 @dataclass(frozen=True)
 class Chunk:
-    """A passage of text extracted from a catalog resource's public document."""
+    """A passage of text from a catalog resource's document.
+
+    PDF chunks: ``page`` is the PDF page index; ``section`` is None.
+    Procedure units (transcriptions): one whole procedure; ``section`` is its heading,
+    ``page``..``page_end`` the printed manual page range inherited from its group.
+    """
 
     resource_id: str
     page: int | None
     chunk_index: int
     text: str
+    section: str | None = None
+    page_end: int | None = None
+    group: str | None = None
+    incomplete: str | None = None  # source-limitation text when the source pages are incomplete
+    review: tuple[str, ...] = ()  # passages flagged for manual verification
+    related: tuple[str, ...] = ()  # catalog IDs of verified resources this procedure uses
+
+    @property
+    def unit_key(self) -> tuple[str, int | None, str | None]:
+        """The citation unit this chunk belongs to (a PDF page, or a procedure section)."""
+        return (self.resource_id, self.page, self.section)
+
+
+def page_label(page: int | None, page_end: int | None) -> str:
+    if page is None:
+        return ""
+    if page_end is not None and page_end != page:
+        return f"pp. {page}–{page_end}"
+    return f"p. {page}"
 
 
 @dataclass(frozen=True)
@@ -58,10 +96,20 @@ class Evidence:
     score: float
     page: int | None = None
     source: str = "catalog"  # "catalog" (metadata) or "document" (extracted text)
+    section: str | None = None
+    page_end: int | None = None
+    incomplete: str | None = None
+    review: tuple[str, ...] = ()
+    related: tuple[Resource, ...] = ()  # resolved from the catalog, never from model output
 
     @property
     def evidence_id(self) -> str:
-        """Stable ID the model cites. Page-level for documents, e.g. 'ra-job-description@p4'."""
+        """Stable ID the model cites.
+
+        PDF pages: 'ra-job-description@p4'. Procedures: 'front-desk-manual#checking-in-packages'.
+        """
+        if self.source == "document" and self.section:
+            return f"{self.resource.id}#{slugify(self.section)}"
         if self.source == "document" and self.page is not None:
             return f"{self.resource.id}@p{self.page}"
         return self.resource.id
@@ -69,17 +117,33 @@ class Evidence:
 
 @dataclass(frozen=True)
 class Citation:
-    """A verified source the answer relied on: a catalog resource plus optional page."""
+    """A verified source the answer relied on: a catalog resource plus optional page/section."""
 
     resource: Resource
     page: int | None = None
+    section: str | None = None
+    page_end: int | None = None
 
     @property
-    def link(self) -> str:
-        """Catalog URL, with a page anchor for PDFs. Always built from catalog data."""
-        if self.page is not None and self.resource.content_type == "pdf" and "#" not in self.resource.url:
-            return f"{self.resource.url}#page={self.page}"
-        return self.resource.url
+    def link(self) -> str | None:
+        """Catalog URL (with a page anchor for PDFs), or None for sources without a public URL."""
+        url = self.resource.url
+        if url is None:
+            return None
+        if self.page is not None and self.resource.content_type == "pdf" and "#" not in url:
+            return f"{url}#page={self.page}"
+        return url
+
+    @property
+    def label(self) -> str:
+        """Human-readable citation, e.g. 'Front Desk Residence Hall Manual, § Checking IN Packages, pp. 30–32'."""
+        parts = [self.resource.title]
+        if self.section:
+            parts.append(f"§ {self.section}")
+        pages = page_label(self.page, self.page_end)
+        if pages:
+            parts.append(pages)
+        return ", ".join(parts)
 
 
 class Status(str, Enum):
@@ -97,3 +161,4 @@ class AssistantResponse:
     resources: tuple[Resource, ...] = ()
     citations: tuple[Citation, ...] = ()
     notice: str | None = None
+    caveats: tuple[str, ...] = ()  # source-quality notices added by code (unverified, incomplete, review)

@@ -4,9 +4,10 @@ VolHacks 2026 project by team First2aMill. A local Streamlit dashboard and groun
 assistant that helps UT FDB Hall RAs find verified public university resources.
 See `docs/PRD.md` and `docs/ARCHITECTURE.md`.
 
-**Status:** Milestone 3. Verified resource dashboard, Larry (floating chat assistant),
-hybrid retrieval (keyword + local ChromaDB semantic search) over catalog metadata and public
-PDFs, and grounded Gemini answers with page-level citations. See `docs/EVALUATION.md`.
+**Status:** Milestone 4. Verified resource dashboard, Larry (floating chat assistant),
+hybrid retrieval (keyword + local ChromaDB semantic search) over catalog metadata, public PDFs,
+and a Front Desk Manual procedures transcription, with grounded Gemini answers and page/section
+citations. See `docs/EVALUATION.md` and `docs/SOURCE_REVIEW.md` (passages needing verification).
 
 ## Setup (Python 3.14, tested; 3.12 is the fallback)
 
@@ -55,7 +56,15 @@ If `pip install -r requirements.txt` fails on 3.14 (e.g. missing chromadb/onnxru
 ## Adding resources
 
 Add entries to `data/resources.json` only after opening and verifying the source.
-Required fields: `id`, `title`, `category` (`maintenance`, `reporting`, `programming`, `policies`, `ra_portals`), and `url` (https).
-Optional fields: `content_type` (`webpage`, `pdf`, `form`, `portal` for sign-in-only systems), `description`, `keywords`.
+Required fields: `id`, `title`, `category` (`maintenance`, `reporting`, `programming`, `policies`, `ra_portals`, `procedures`), and `url` (https).
+Optional fields: `content_type` (`webpage`, `pdf`, `form`, `portal` for sign-in-only systems, `transcription`), `description`, `keywords`.
 After adding a PDF, run `python -m scripts.build_index`.
 The app refuses to load the catalog if any entry is invalid and shows every problem it found.
+
+## Procedures (Markdown transcriptions)
+
+A `"content_type": "transcription"` entry has **no** `url` and points to a Markdown file with
+`source_path`. Format: `## Group (pp. 24–26)` (page range required) and `### Procedure` for each
+procedure; each procedure is kept whole. An optional sidecar `<file>.meta.json` adds `related`
+(existing catalog IDs to link) and `review` (passages flagged for manual verification; the text
+itself is never edited). Rerun `build_index` after editing the file. See `docs/SOURCE_REVIEW.md`.

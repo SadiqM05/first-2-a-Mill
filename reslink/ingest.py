@@ -109,3 +109,17 @@ def load_index(path: Path, resources: list[Resource]) -> tuple[list[Chunk], list
             "rebuild with: python -m scripts.build_index"
         )
     return chunks, warnings
+
+
+def load_chunks(index_path: Path, resources: list[Resource], root: Path) -> tuple[list[Chunk], list[str]]:
+    """Every retrievable chunk: PDF chunks from the built index + procedure units parsed live.
+
+    Procedures are parsed from their Markdown source on each load (cheap), so edits to the
+    transcription are picked up immediately; the semantic index's fingerprint then flags it
+    as stale until `python -m scripts.build_index` is rerun.
+    """
+    from reslink.procedures import load_procedure_chunks
+
+    pdf_chunks, warnings = load_index(index_path, resources)
+    procedure_chunks, procedure_warnings = load_procedure_chunks(resources, root)
+    return pdf_chunks + procedure_chunks, warnings + procedure_warnings

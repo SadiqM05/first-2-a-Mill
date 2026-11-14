@@ -7,8 +7,8 @@ import streamlit as st
 from reslink import ui
 from reslink.assistant import GeminiGenerator, answer_question
 from reslink.catalog import CatalogError, group_by_category, load_catalog
-from reslink.config import load_env_file, load_settings
-from reslink.ingest import load_index
+from reslink.config import PROJECT_ROOT, load_env_file, load_settings
+from reslink.ingest import load_chunks
 from reslink.larry import render_larry
 from reslink.retrieval import HybridRetriever, KeywordRetriever
 from reslink.semantic import (
@@ -62,7 +62,7 @@ except CatalogError as error:
     resources, chunks, index_warnings = [], [], []
     catalog_error = error
 else:
-    chunks, index_warnings = load_index(settings.index_path, resources)
+    chunks, index_warnings = load_chunks(settings.index_path, resources, PROJECT_ROOT)
     catalog_error = None
 
 retriever, retrieval_status = get_retriever(

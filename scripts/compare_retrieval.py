@@ -24,8 +24,8 @@ import time
 from pathlib import Path
 
 from reslink.catalog import load_catalog
-from reslink.config import load_settings
-from reslink.ingest import load_index
+from reslink.config import PROJECT_ROOT, load_settings
+from reslink.ingest import load_chunks
 from reslink.retrieval import HybridRetriever, KeywordRetriever
 from reslink.semantic import CATALOG_MAX_DISTANCE, DEFAULT_MAX_DISTANCE, SemanticIndex
 
@@ -116,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
 
     settings = load_settings()
     resources = load_catalog(settings.catalog_path)
-    chunks, _ = load_index(settings.index_path, resources)
+    chunks, _ = load_chunks(settings.index_path, resources, PROJECT_ROOT)
     keyword = KeywordRetriever(resources, chunks)
     index, status = SemanticIndex.open(settings.chroma_path, resources, chunks)
     if index is None:

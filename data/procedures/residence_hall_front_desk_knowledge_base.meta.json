@@ -1,0 +1,25 @@
+{
+  "_comment": "Sidecar for residence_hall_front_desk_knowledge_base.md. 'related' links procedures to existing verified catalog IDs (links come only from data/resources.json). 'review' flags transcription passages for manual verification; the Markdown text itself is never corrected here.",
+  "related": {
+    "Steps to Issue Access Card": ["lockout-card-access"],
+    "Steps for Returned Cards": ["lockout-card-access"],
+    "Steps for Lost Card": ["lockout-card-access", "maintenance-request-portal"],
+    "Excessive Lockouts — Access Cards": ["lockout-card-access", "maintenance-request-portal"],
+    "Steps for Recore — Lost Keys or Lockout Keys Never Returned": ["maintenance-request-portal"],
+    "Excessive Lockouts — Keys": ["maintenance-request-portal"],
+    "School Dude — Problem Type Reference": ["maintenance-request-portal"],
+    "Sorting Paper Mail": ["starrez-roster"],
+    "Forwarding Mail": ["starrez-roster"]
+  },
+  "review": {
+    "Excessive Lockouts — Access Cards": [
+      "The manual note here mentions 'lost lockout charges' although this section covers excessive lockouts; it matches the Lost Card note word for word and may be a transcription copy. Verify against the photographed page."
+    ],
+    "Excessive Lockouts — Keys": [
+      "This version has 4 steps; the Access Cards version also includes a step to complete the back of the lockout card. Verify whether a step is missing from the transcription."
+    ],
+    "Giving Recored Keys to Residents": [
+      "The manual note about charging for recores appears under this procedure, although charging happens in 'Steps for Recore'. Verify its placement against the photographed page."
+    ]
+  }
+}

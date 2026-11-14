@@ -13,8 +13,8 @@ from urllib.parse import urlparse
 
 from reslink.models import CATEGORIES, CONTENT_TYPES, Resource
 
-REQUIRED_FIELDS = ("id", "title", "category", "url")
-OPTIONAL_FIELDS = ("content_type", "description", "keywords")
+REQUIRED_FIELDS = ("id", "title", "category")  # plus "url" for every type except "transcription"
+OPTIONAL_FIELDS = ("url", "content_type", "description", "keywords", "source_path")
 ALLOWED_FIELDS = frozenset(REQUIRED_FIELDS + OPTIONAL_FIELDS)
 
 # Hosts reserved for documentation/test data. These are used by test fixtures
@@ -69,15 +69,28 @@ def _validate_entry(
     if isinstance(category, str) and category.strip() and category.strip() not in CATEGORIES:
         errors.append(f"{where}: category {category!r} must be one of {sorted(CATEGORIES)}")
 
-    url = raw.get("url")
-    if isinstance(url, str) and url.strip():
-        url_error = _validate_url(url.strip(), allow_placeholders)
-        if url_error:
-            errors.append(f"{where}: {url_error}")
-
     content_type = raw.get("content_type", "webpage")
     if content_type not in CONTENT_TYPES:
         errors.append(f"{where}: content_type {content_type!r} must be one of {list(CONTENT_TYPES)}")
+
+    url = raw.get("url")
+    source_path = raw.get("source_path")
+    if content_type == "transcription":
+        # Local transcription with no public URL: must NOT carry a url (never shown as a link),
+        # must name the Markdown file it is indexed from.
+        if url is not None:
+            errors.append(f"{where}: a 'transcription' must not have a url (it has no public source link)")
+        if not isinstance(source_path, str) or not source_path.strip():
+            errors.append(f"{where}: a 'transcription' requires 'source_path' (repo-relative Markdown file)")
+    else:
+        if not isinstance(url, str) or not url.strip():
+            errors.append(f"{where}: 'url' is required and must be a non-empty string")
+        else:
+            url_error = _validate_url(url.strip(), allow_placeholders)
+            if url_error:
+                errors.append(f"{where}: {url_error}")
+        if source_path is not None:
+            errors.append(f"{where}: 'source_path' is only allowed for content_type 'transcription'")
 
     description = raw.get("description", "")
     if not isinstance(description, str):
@@ -97,10 +110,11 @@ def _validate_entry(
             id=raw["id"].strip(),
             title=raw["title"].strip(),
             category=raw["category"].strip(),
-            url=raw["url"].strip(),
+            url=url.strip() if isinstance(url, str) else None,
             content_type=content_type,
             description=description.strip(),
             keywords=tuple(k.strip() for k in keywords),
+            source_path=source_path.strip() if isinstance(source_path, str) else None,
         ),
         [],
     )

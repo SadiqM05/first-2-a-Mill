@@ -29,7 +29,7 @@ os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
 
 COLLECTION_NAME = "reslink"
 EMBEDDING_MODEL = "chroma-onnx/all-MiniLM-L6-v2"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # 2: procedure units + section metadata
 
 # Cosine-distance cutoffs above which semantic hits are discarded as noise, tuned with
 # `python -m scripts.compare_retrieval --sweep` on tests/eval_questions.json (docs/EVALUATION.md).
@@ -42,6 +42,7 @@ DEFAULT_MAX_DISTANCE = 0.75
 CATALOG_MAX_DISTANCE = 0.65
 
 CATALOG_KIND = "catalog"
+INDEXED_TYPES = ("pdf", "transcription")
 DOCUMENT_KIND = "document"
 
 
@@ -80,18 +81,21 @@ def build_documents(resources: list[Resource], chunks: list[Chunk]) -> list[Inde
     ]
     for c in chunks:
         resource = by_id.get(c.resource_id)
-        # Only public documents are embedded; a chunk tied to a portal (or to nothing) is never indexed.
-        if resource is None or resource.content_type != "pdf" or not c.text.strip():
+        # Only public documents and approved transcriptions are embedded; a chunk tied to a
+        # portal (or to nothing) is never indexed.
+        if resource is None or resource.content_type not in INDEXED_TYPES or not c.text.strip():
             continue
         docs.append(
             IndexDocument(
                 id=f"doc:{c.resource_id}@p{c.page}#c{c.chunk_index}",
-                text=c.text,
+                # Procedures are embedded with their heading so "how do I recore" finds them.
+                text=f"{c.section}\n{c.text}" if c.section else c.text,
                 metadata={
                     "kind": DOCUMENT_KIND,
                     "resource_id": c.resource_id,
                     "page": c.page if c.page is not None else -1,
                     "chunk_index": c.chunk_index,
+                    "section": c.section or "",
                 },
             )
         )

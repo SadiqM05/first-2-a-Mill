@@ -5,7 +5,8 @@ function, so this module only handles layout, session state, and rendering.
 
 State (st.session_state):
 - ``larry_open``: whether the panel is shown (starts False).
-- ``larry_history``: list of (question, AssistantResponse); survives close/reopen.
+- ``larry_history``: list of (question, AssistantResponse); survives close/reopen. In memory only
+  (never written to disk); obvious personal info is redacted before it is stored.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from pathlib import Path
 import streamlit as st
 
 from reslink.models import AssistantResponse
+from reslink.privacy import redact
 from reslink.ui import render_response
 
 WELCOME_MESSAGE = (
@@ -23,7 +25,7 @@ WELCOME_MESSAGE = (
     "understanding housing policies, or accessing a portal? Just ask!"
 )
 LOADING_MESSAGE = "Larry is checking verified resources..."
-INPUT_PLACEHOLDER = "Ask Larry a question..."
+INPUT_PLACEHOLDER = "Ask Larry a question (no resident names or IDs)..."
 ICON = ":material/chat:"
 
 OPEN_KEY = "larry_open"
@@ -75,13 +77,15 @@ def _render_panel(ask: Ask) -> None:
             for past_question, past_response in st.session_state[HISTORY_KEY]:
                 _render_exchange(past_question, past_response)
             if question:
+                # Obvious personal info is never displayed back or kept in session history.
+                shown = redact(question)
                 with st.chat_message("user"):
-                    st.write(question)
+                    st.write(shown)
                 with st.chat_message("assistant", avatar=ICON):
                     with st.spinner(LOADING_MESSAGE):
                         response = ask(question)
                     render_response(response)
-                st.session_state[HISTORY_KEY].append((question, response))
+                st.session_state[HISTORY_KEY].append((shown, response))
 
 
 def render_larry(ask: Ask) -> None:

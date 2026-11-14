@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -23,7 +24,8 @@ from pathlib import Path
 from reslink.assistant import GeminiGenerator, answer_question
 from reslink.catalog import load_catalog
 from reslink.config import PROJECT_ROOT, load_env_file, load_settings
-from reslink.ingest import load_index
+from reslink.ingest import load_chunks
+from reslink.models import slugify
 from reslink.retrieval import HybridRetriever, KeywordRetriever
 from reslink.semantic import CATALOG_MAX_DISTANCE, DEFAULT_MAX_DISTANCE, SemanticIndex
 
@@ -52,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     resources = load_catalog(settings.catalog_path)
-    chunks, warnings = load_index(settings.index_path, resources)
+    chunks, warnings = load_chunks(settings.index_path, resources, PROJECT_ROOT)
     for w in warnings:
         print("warning:", w, file=sys.stderr)
     keyword = KeywordRetriever(resources, chunks)
@@ -75,7 +77,11 @@ def main(argv: list[str] | None = None) -> int:
         start = time.time()
         response = answer_question(case["question"], retriever, generator)
         elapsed = time.time() - start
-        cites = [f"{c.resource.id}" + (f"@p{c.page}" if c.page else "") for c in response.citations]
+        cites = [
+            f"{c.resource.id}#{slugify(c.section)}" if c.section
+            else f"{c.resource.id}" + (f"@p{c.page}" if c.page else "")
+            for c in response.citations
+        ]
         want = targets(case)
         if response.status.value == "grounded":
             on_target = bool(set(cites) & want)
@@ -84,12 +90,30 @@ def main(argv: list[str] | None = None) -> int:
         else:
             on_target, off_target = False, []
             citation_ok = not cites
+        checks = []
+        if case.get("walkthrough_steps") and response.answer:
+            # Completeness: every documented top-level step number must appear in the answer.
+            steps = {int(n) for n in re.findall(r"^\s*(\d+)\.", response.answer, flags=re.M)}
+            complete = set(range(1, case["walkthrough_steps"] + 1)) <= steps
+            checks.append(f"walkthrough steps {len(steps)}/{case['walkthrough_steps']} "
+                          f"{'OK' if complete else 'INCOMPLETE'}")
+            citation_ok = citation_ok and complete
+        for key in ("expected_caveat", "expected_caveat_any"):
+            if case.get(key) and response.status.value == "grounded":
+                has = any(case[key] in c for c in response.caveats)
+                checks.append(f"caveat '{case[key]}' {'present' if has else 'MISSING'}")
+                citation_ok = citation_ok and has
         s_ok = response.status.value == case["expected_status"]
         status_ok += s_ok
         cite_ok += citation_ok
         print(f"{'PASS' if s_ok else 'FAIL'}  {response.status.value:22} {elapsed:4.1f}s  {case['question']}")
         print(f"      cites: {cites or '-'}  citation_ok={citation_ok}"
               + (f"  off-target: {off_target}" if off_target else ""))
+        for check in checks:
+            print(f"      check: {check}")
+        for caveat in response.caveats:
+            print(f"      caveat: {caveat}")
+        print(f"      resources: {[r.id for r in response.resources]}")
         print(f"      answer: {response.answer or response.notice}\n")
         results.append({
             "question": case["question"], "expected_status": case["expected_status"],
@@ -97,6 +121,8 @@ def main(argv: list[str] | None = None) -> int:
             "citations": cites, "targets": sorted(want), "citation_ok": citation_ok,
             "off_target_citations": off_target, "links": [c.link for c in response.citations],
             "seconds": round(elapsed, 2), "retrieval": retriever.last_mode,
+            "caveats": list(response.caveats), "checks": checks,
+            "resources": [r.id for r in response.resources],
         })
 
     args.out.parent.mkdir(parents=True, exist_ok=True)

@@ -46,7 +46,7 @@ def test_build_documents_contents(resources, chunks):
     # non-pdf resources and orphans contribute no document text
     assert not any("must never be indexed" in d.text or "orphan" in d.text for d in docs)
     meta = next(d.metadata for d in docs if d.id == f"doc:{PDF_ID}@p2#c0")
-    assert meta == {"kind": "document", "resource_id": PDF_ID, "page": 2, "chunk_index": 0}
+    assert meta == {"kind": "document", "resource_id": PDF_ID, "page": 2, "chunk_index": 0, "section": ""}
 
 
 def test_catalog_text_is_metadata_without_urls(resources):
@@ -108,3 +108,15 @@ def test_rebuild_replaces_collection(tmp_path, resources, chunks):
     assert status == "ready"
     assert index._collection.count() == len(build_documents(resources, chunks[:1]))
     assert index._collection.name == COLLECTION_NAME
+
+
+def test_transcription_procedures_are_embedded_with_heading(resources):
+    from reslink.catalog import parse_catalog
+
+    manual = parse_catalog([{"id": "manual", "title": "PLACEHOLDER manual", "category": "procedures",
+                             "content_type": "transcription", "source_path": "x.md"}])
+    proc = Chunk("manual", 30, 0, "1. PLACEHOLDER step.", section="Checking IN Packages", page_end=32)
+    docs = build_documents(resources + manual, [proc])
+    [d] = [d for d in docs if d.id.startswith("doc:")]
+    assert d.text.startswith("Checking IN Packages\n1. PLACEHOLDER step.")
+    assert d.metadata["section"] == "Checking IN Packages" and d.metadata["page"] == 30

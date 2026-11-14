@@ -10,12 +10,14 @@ import math
 import re
 from typing import TYPE_CHECKING, Hashable, Protocol, TypeVar
 
-from reslink.models import Chunk, Evidence, Resource
+from reslink.models import Chunk, Evidence, Resource, page_label
+from reslink.procedures import neutralize_urls
 
 if TYPE_CHECKING:
     from reslink.semantic import SemanticHit
 
 T = TypeVar("T", bound=Hashable)
+UnitKey = tuple[str, "int | None", "str | None"]
 
 # Words that carry no signal for matching RA questions to resources.
 STOPWORDS = frozenset(
@@ -63,6 +65,23 @@ def _contains_phrase(tokens: list[str], phrase: list[str]) -> bool:
     return n > 0 and any(tokens[i : i + n] == phrase for i in range(len(tokens) - n + 1))
 
 
+def procedure_evidence_text(resource: Resource, chunk: Chunk, body: str) -> str:
+    """Evidence block for one whole procedure, with its source status stated up front.
+
+    Web addresses inside the transcription are replaced: links are only ever shown from the catalog.
+    """
+    lines = [f"Source: {resource.title}, § {chunk.section}, {page_label(chunk.page, chunk.page_end)}"
+             + (f" (group: {chunk.group})" if chunk.group and chunk.group != chunk.section else "")]
+    if resource.is_transcription:
+        lines.append("Source status: transcription of photographed manual pages; not independently verified as current.")
+    if chunk.incomplete:
+        lines.append(f"INCOMPLETE SOURCE: {chunk.incomplete}")
+    for note in chunk.review:
+        lines.append(f"FLAGGED FOR REVIEW: {note}")
+    lines.append(neutralize_urls(body))
+    return "\n".join(lines)
+
+
 def evidence_text(resource: Resource) -> str:
     """Catalog metadata given to the model as evidence. URLs are deliberately excluded."""
     lines = [
@@ -95,7 +114,8 @@ class KeywordRetriever:
         self._by_id = {r.id: r for r in self.resources}
         # Chunks whose resource isn't in the catalog are ignored: every evidence must be verifiable.
         self.chunks = [c for c in (chunks or []) if c.resource_id in self._by_id]
-        self._chunk_tokens = [set(tokenize(c.text)) for c in self.chunks]
+        # Procedure headings are searchable too ("recore", "checking in packages").
+        self._chunk_tokens = [set(tokenize(f"{c.section or ''} {c.text}")) for c in self.chunks]
         self._chunk_lookup = {(c.resource_id, c.page, c.chunk_index): c for c in self.chunks}
         n = len(self.chunks)
         df: dict[str, int] = {}
@@ -142,8 +162,11 @@ class KeywordRetriever:
         hits.sort(key=lambda pair: (-pair[0], pair[1].title.lower()))
         return [Evidence(resource=r, text=evidence_text(r), score=s) for s, r in hits[:top_k]]
 
-    def rank_pages(self, query: str) -> list[tuple[tuple[str, int | None], float, list[Chunk]]]:
-        """Keyword-ranked document pages: [((resource_id, page), score, matching chunks)], best first."""
+    def rank_pages(self, query: str) -> list[tuple[UnitKey, float, list[Chunk]]]:
+        """Keyword-ranked citation units, best first: [(unit_key, score, matching chunks)].
+
+        A unit is a PDF page, or one whole procedure (see Chunk.unit_key).
+        """
         query_unique = set(tokenize(query))
         if not query_unique or not self.chunks:
             return []
@@ -152,12 +175,12 @@ class KeywordRetriever:
         # Citations are page-level, so matching chunks are grouped by page: one evidence
         # per page (ranked by its best chunk), containing every matching chunk of that page.
         # Keeping only the best chunk would drop answers that sit in a lower-scoring chunk.
-        pages: dict[tuple[str, int | None], tuple[float, int, list[Chunk]]] = {}
+        pages: dict[UnitKey, tuple[float, int, list[Chunk]]] = {}
         for i, chunk in enumerate(self.chunks):
             score, matched = self.score_chunk(query, i)
             if matched < needed or score <= 0:
                 continue
-            key = (chunk.resource_id, chunk.page)
+            key = chunk.unit_key
             best, first, group = pages.get(key, (0.0, i, []))
             pages[key] = (max(best, score), min(first, i), group + [chunk])
         ranked = sorted(pages.items(), key=lambda kv: (-kv[1][0], kv[1][1]))
@@ -166,19 +189,28 @@ class KeywordRetriever:
     def chunk(self, resource_id: str, page: int | None, chunk_index: int) -> Chunk | None:
         return self._chunk_lookup.get((resource_id, page, chunk_index))
 
-    def page_evidence(self, resource_id: str, page: int | None, chunks: list[Chunk], score: float) -> Evidence:
-        """One document evidence block for a page, built from the given chunks (deduplicated, in order)."""
+    def page_evidence(self, chunks: list[Chunk], score: float) -> Evidence:
+        """One document evidence block for a citation unit, from its chunks (deduplicated, in order).
+
+        Procedures are always a single whole chunk, so a procedure reaches the model complete.
+        """
         unique = {c.chunk_index: c for c in chunks}
-        body = "\n...\n".join(unique[i].text for i in sorted(unique))
-        resource = self._by_id[resource_id]
-        text = f"Source: {resource.title}, page {page}\n{body}"
-        return Evidence(resource, text, score, page=page, source="document")
+        ordered = [unique[i] for i in sorted(unique)]
+        first = ordered[0]
+        resource = self._by_id[first.resource_id]
+        body = "\n...\n".join(c.text for c in ordered)
+        if first.section is None:  # PDF page
+            return Evidence(resource, f"Source: {resource.title}, page {first.page}\n{body}", score,
+                            page=first.page, source="document")
+        return Evidence(
+            resource, procedure_evidence_text(resource, first, body), score, page=first.page,
+            source="document", section=first.section, page_end=first.page_end,
+            incomplete=first.incomplete, review=first.review,
+            related=tuple(self._by_id[r] for r in first.related if r in self._by_id),
+        )
 
     def retrieve_documents(self, query: str, top_k: int = 3) -> list[Evidence]:
-        return [
-            self.page_evidence(rid, page, group, score)
-            for (rid, page), score, group in self.rank_pages(query)[:top_k]
-        ]
+        return [self.page_evidence(group, score) for _, score, group in self.rank_pages(query)[:top_k]]
 
     def retrieve(self, query: str, top_k: int = 3) -> list[Evidence]:
         return self.retrieve_catalog(query, top_k) + self.retrieve_documents(query, top_k)
@@ -232,10 +264,11 @@ class HybridRetriever:
         keyword_pages: int = 3,
         semantic_catalog_n: int = 1,
         semantic_chunk_n: int = 8,
-        semantic_pages: int = 2,
+        semantic_pages: int = 1,
     ):
-        # Defaults chosen with scripts/compare_retrieval.py: same recall as larger settings,
-        # roughly half the off-target evidence (see docs/EVALUATION.md).
+        # Defaults chosen with scripts/compare_retrieval.py (docs/EVALUATION.md). semantic_pages
+        # went 2 -> 1 in Milestone 4: with procedure units added, 2 let semantic pages push a
+        # keyword-found PDF target out of the top 3; 1 kept recall and reduced off-target evidence.
         self.keyword = keyword
         self.semantic = semantic
         self.max_distance = max_distance  # document chunks
@@ -281,22 +314,22 @@ class HybridRetriever:
 
         # Documents: fuse keyword page ranking with semantic page ranking (page = citation unit).
         kw_pages = self.keyword.rank_pages(query)[: self.keyword_pages]
-        page_chunks: dict[tuple[str, int | None], list[Chunk]] = {key: list(g) for key, _, g in kw_pages}
-        sem_pages: list[tuple[str, int | None]] = []
+        page_chunks: dict[UnitKey, list[Chunk]] = {key: list(g) for key, _, g in kw_pages}
+        sem_pages: list[UnitKey] = []
         for h in chunk_hits:
             if h.chunk_index is None:
                 continue
             chunk = self.keyword.chunk(h.resource_id, h.page, h.chunk_index)
             if chunk is None:  # index and chunks.json disagree: ignore the hit
                 continue
-            key = (h.resource_id, h.page)
+            key = chunk.unit_key
             if key not in sem_pages:
                 if len(sem_pages) >= self.semantic_pages:
                     continue
                 sem_pages.append(key)
             page_chunks.setdefault(key, []).append(chunk)
         documents = [
-            self.keyword.page_evidence(rid, page, page_chunks[(rid, page)], score)
-            for (rid, page), score in rrf_fuse([[k for k, _, _ in kw_pages], sem_pages])[: self.doc_top_k]
+            self.keyword.page_evidence(page_chunks[key], score)
+            for key, score in rrf_fuse([[k for k, _, _ in kw_pages], sem_pages])[: self.doc_top_k]
         ]
         return catalog + documents

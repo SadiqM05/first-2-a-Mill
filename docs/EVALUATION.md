@@ -96,3 +96,62 @@ measured rate. Rerun `python -m scripts.run_eval --live` before the demo to conf
   quota. The insufficient-evidence check and citation validation stay the safeguard.
 - If ChromaDB, the index or the model is missing, stale or erroring, retrieval falls back to
   keyword-only. The sidebar shows "Retrieval: keyword only" and the reason.
+
+# Milestone 4: procedures from the Front Desk Manual transcription
+
+Measured 2026-11-14 with 18 procedure units added (16 procedures, 1 group overview, 1 reference
+table). Question set: 47 questions. 31 are carried over from Milestone 3. 16 are about procedures:
+14 can be answered from the sources, 1 asks for missing steps, 1 is unsupported, and 1 contains
+personal information.
+
+## Offline retrieval (no Gemini)
+
+| Group | Keyword R@1 → hybrid | Keyword R@3 → hybrid |
+|---|---|---|
+| Earlier PDF/catalog questions (n=24) | 75% → 92% | 79% → **96%** (unchanged from Milestone 3) |
+| Procedure questions (n=14) | 57% → **50%** | 79% → **93%** |
+| All supported (n=38) | 68% → 76% | 79% → **95%** |
+
+- **Regression found and fixed:** adding the procedures pushed "When do I hold open door hours?"
+  out of hybrid's top 3. Words like "door" and "hours" became more common across the index, so
+  they count for less. Semantic search now contributes 1 candidate page instead of 2. That fixed it
+  and gave the best top-3 recall (95% vs 92%), with less off-target evidence (68 vs 75 items).
+- **Tried and rejected:** counting words in a procedure's heading twice. It fixed one keyword-only
+  miss but broke "A resident lost their room key, what happens?".
+- **Top-1 drop on procedures (57% → 50%):** semantic search sometimes ranks a neighbouring procedure
+  first. All top-3 evidence reaches Gemini, so answers rely on top-3 recall (93%).
+- **Known misses:** "What is SC Logic?" (the overview loses to procedures with "SC Logic" in their
+  headings). "How do I return a letter to sender?" is missed by keyword search only; hybrid finds it.
+- **Accepted extra match:** keyword search now also returns the Front Desk Manual for "How many
+  front desk hours…" because of its title. This is recorded as `acceptable_catalog`.
+
+## Live Gemini (8 API calls + 1 privacy-blocked question, `gemini-3.5-flash-lite`)
+
+| Question | Expected | Result | Checked against the transcription |
+|---|---|---|---|
+| How do I check in a package? *(walkthrough)* | grounded | grounded | All 12 steps verbatim and in order, with RAW-package branching and sub-bullets. The model returned them on one line; see below. |
+| Walk me through a recore for a lost key *(walkthrough)* | grounded | grounded | 11/11 steps. $45 template kept with placeholders. School Dude portal linked. |
+| What craft do I select in School Dude when charging for a lost access card? *(specific)* | grounded | grounded | "Operational services" (§ Steps for Lost Card). One sentence, no full walkthrough. |
+| How long can a resident keep a lockout access card? *(specific)* | grounded | grounded | Up to 72 h; 72 h lost/broken phone, 2 h phone in room. |
+| How do I return a letter to sender? *(incomplete)* | grounded + incomplete notice | grounded | 3 steps. The model said the source is incomplete, and the code-added notice was shown. |
+| What are steps 1 to 3 of the School Dude procedure on page 18? | insufficient | insufficient | Declined: "steps 1 through 3 ... were not supplied". Nothing invented. |
+| How do I process a refund for a resident? | insufficient | insufficient | Declined. |
+| Charge John Smith, UT ID 123456789, room 214 … *(privacy)* | blocked | blocked | 0 API calls. The ID was redacted in chat history. |
+| Can I have a pet? *(PDF regression)* | grounded | grounded | Unchanged and correct (policies p1). |
+
+Status matched 9/9. Every grounded answer cited the right section, every procedure answer carried
+the "not verified as current" notice, and related links came only from catalog IDs. Median latency
+was 1.5 s.
+
+**Formatting fix:** the model sometimes writes a numbered procedure inline. The check-in walkthrough
+had all 12 steps on one line, which renders as one paragraph in Larry. The code now puts an inline
+`1. … 2. … 3.` run on separate lines without changing any words. That is checked on the recorded
+live answer (word sequence identical) and by unit tests. Not re-run live, to stay within budget.
+
+## Privacy check (limitations)
+
+It blocks only obvious patterns before retrieval or Gemini: 9-digit ID numbers, SSN-like numbers,
+emails and phone numbers. **Names, room numbers, NetIDs and birthdays written in words are not
+detected.** Larry's input placeholder asks users not to enter resident names or IDs. Chat history
+is kept in memory for the browser session only and never written to disk. Detected patterns are
+redacted before they're stored or shown again.

@@ -19,9 +19,10 @@ from pathlib import Path
 import requests
 
 from reslink.catalog import CatalogError, load_catalog
-from reslink.config import DEFAULT_CATALOG_PATH, DEFAULT_CHROMA_PATH, DEFAULT_INDEX_PATH, DOCUMENTS_DIR
+from reslink.config import DEFAULT_CATALOG_PATH, DEFAULT_CHROMA_PATH, DEFAULT_INDEX_PATH, DOCUMENTS_DIR, PROJECT_ROOT
 from reslink.ingest import chunk_pages, extract_pdf_pages, save_index
 from reslink.models import Chunk, Resource
+from reslink.procedures import load_procedure_chunks
 
 USER_AGENT = "ResLinkAI-hackathon-indexer/0.1"
 
@@ -53,6 +54,8 @@ def main(argv: list[str] | None = None) -> int:
     chunks: list[Chunk] = []
     failures = 0
     for resource in resources:
+        if resource.is_transcription:
+            continue  # handled below (parsed from its Markdown source)
         if resource.content_type != "pdf":
             print(f"skip   {resource.id} ({resource.content_type}: not ingestible)")
             continue
@@ -74,6 +77,15 @@ def main(argv: list[str] | None = None) -> int:
     save_index(chunks, resources, DEFAULT_INDEX_PATH)
     print(f"wrote  {DEFAULT_INDEX_PATH} ({len(chunks)} chunks, {failures} failure(s))")
 
+    procedure_chunks, procedure_warnings = load_procedure_chunks(resources, PROJECT_ROOT)
+    for warning in procedure_warnings:
+        failures += 1
+        print(f"FAIL   {warning}", file=sys.stderr)
+    for resource in (r for r in resources if r.is_transcription):
+        n = sum(1 for c in procedure_chunks if c.resource_id == resource.id)
+        if n:
+            print(f"parse  {resource.id}: {n} procedure units from {resource.source_path}")
+
     if args.keyword_only:
         print("skip   semantic index (--keyword-only)")
     else:
@@ -81,9 +93,9 @@ def main(argv: list[str] | None = None) -> int:
             from reslink.semantic import SemanticIndex, build_documents
 
             start = time.time()
-            SemanticIndex.build(DEFAULT_CHROMA_PATH, resources, chunks)
-            n = len(build_documents(resources, chunks))
-            print(f"wrote  {DEFAULT_CHROMA_PATH} ({n} embedded items: catalog metadata + chunks, "
+            SemanticIndex.build(DEFAULT_CHROMA_PATH, resources, chunks + procedure_chunks)
+            n = len(build_documents(resources, chunks + procedure_chunks))
+            print(f"wrote  {DEFAULT_CHROMA_PATH} ({n} embedded items: catalog metadata + PDF chunks + procedures, "
                   f"{time.time() - start:.1f}s)")
         except ImportError:
             failures += 1

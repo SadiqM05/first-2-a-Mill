@@ -52,5 +52,14 @@
     "content_type": "pdf",
     "description": "UT University Housing residence hall policies (file dated 7.21.2023), covering topics such as alcohol, animals, cooking and appliances, decorations, fire safety, keys and ID cards, quiet and courtesy hours, smoking, visitation and escort, weapons, and inspection and search.",
     "keywords": ["housing policies", "policy", "policies", "rules", "prohibited", "allowed", "quiet hours", "courtesy hours", "visitation", "guests", "alcohol", "fire safety", "appliances", "decorations"]
+  },
+  {
+    "id": "front-desk-manual",
+    "title": "Front Desk Residence Hall Manual",
+    "category": "procedures",
+    "content_type": "transcription",
+    "source_path": "data/procedures/residence_hall_front_desk_knowledge_base.md",
+    "description": "Front desk procedures (lockout cards, keys, recores, packages and mail, School Dude problem types). Structured transcription of photographed manual pages 18 and 24–32; not independently verified as current. No public link.",
+    "keywords": ["front desk manual", "front desk procedure", "desk procedure", "sc logic", "package", "packages", "recore"]
   }
 ]
