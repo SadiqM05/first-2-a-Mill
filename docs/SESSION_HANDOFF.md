@@ -1,6 +1,7 @@
 # ResLink AI — Session Handoff
 
-**Written:** 2026-11-14, at the end of the Milestone 4 session.
+**Written:** 2026-11-14, at the end of the Milestone 4 session. **Refreshed:** 2026-11-14,
+after Milestone 4 was committed (`8dff352`) and after the approved repository cleanup.
 **Purpose:** let a fresh Claude Code session pick up without the previous conversation.
 **Sources:** facts below were checked against the repository, `git`, and a test run at the time
 of writing. Each item is marked as **done**, **uncommitted**, or **proposed**. No secrets are in
@@ -57,10 +58,11 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 | `scripts/build_index.py` | Downloads catalog PDFs, writes `data/index/chunks.json`, builds the Chroma index (with procedures). |
 | `scripts/compare_retrieval.py` | Offline keyword vs hybrid metrics (`--sweep` for thresholds). |
 | `scripts/run_eval.py` | Live Gemini evaluation (`--live` = budgeted subset). |
-| `scripts/check_gemini.py` | User's Gemini connectivity check (formerly `test_gemini.py`); see §5. |
+| `scripts/check_gemini.py` | Pre-demo Gemini connectivity check through the app's own settings and wrapper (1 request, key never printed). |
 | `data/resources.json` | Verified catalog (7 entries). |
 | `data/procedures/residence_hall_front_desk_knowledge_base.md` (+ `.meta.json`) | Front Desk Manual transcription and its sidecar (related links, review flags). |
-| `docs/PRD.md`, `docs/ARCHITECTURE.md` | Original product and architecture specs. ARCHITECTURE.md has **not** been updated since the start; `docs/DECISIONS.md` records what changed. |
+| `docs/PRD.md` | Original product spec. |
+| `docs/ARCHITECTURE.md` | The system as built (updated in the cleanup). |
 | `docs/DECISIONS.md` | Decision log, items 1–36. **Read this first** for any "why". |
 | `docs/EVALUATION.md` | Measured retrieval and live results for Milestones 3 and 4. |
 | `docs/SOURCE_REVIEW.md` | Transcription passages that need manual verification. |
@@ -76,7 +78,8 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 | M2: keyword retrieval, Gemini integration, PDF ingestion, page citations | **Done, committed** | `1b823c5` |
 | UI: Larry floating chatbot, theme toggle restored | **Done, committed** | `a015a71` |
 | M3: hybrid retrieval (ChromaDB + RRF), stricter `sufficient` rule | **Done, committed** | `92c425e` |
-| **M4: procedures knowledge base, privacy check, section citations** | **Done, NOT committed** | (working tree) |
+| M4: procedures knowledge base, privacy check, section citations | **Done, committed** | `8dff352` |
+| Repository cleanup (approved audit) | **Done, NOT committed** | (working tree; see §3) |
 | Staff bulletin (stretch) | Not started, not approved | — |
 
 **Features implemented (all done):**
@@ -107,7 +110,7 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
   validation does.
 - Portals are never ingested, only their catalog metadata.
 
-**Milestone 4 changes (uncommitted):**
+**Milestone 4 changes (committed in `8dff352`):**
 - New `procedures` category and `transcription` content type (no URL, requires `source_path`).
 - New `reslink/procedures.py`: 18 units from the manual (16 procedures, the Mail overview, the
   School Dude reference). Stored verbatim, one whole chunk each.
@@ -124,17 +127,22 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 
 ---
 
-## 3. Current repository state (checked at handoff)
+## 3. Current repository state (refreshed after cleanup)
 
-- **Branch:** `main`. **Latest commit:** `92c425e feat: implement hybrid retrieval with ChromaDB`.
-- **Modified (uncommitted, all Milestone 4):** `README.md`, `app.py`, `data/resources.json`,
-  `docs/DECISIONS.md`, `docs/EVALUATION.md`, `reslink/{assistant,catalog,ingest,larry,models,retrieval,semantic,ui}.py`,
-  `scripts/{build_index,compare_retrieval,run_eval}.py`, `tests/eval_questions.json`,
-  `tests/{test_catalog,test_eval_retrieval,test_larry,test_semantic}.py`.
-- **Untracked (should be committed with M4):** `data/procedures/` (the user's `.md` + the sidecar
-  `.meta.json`), `docs/SOURCE_REVIEW.md`, `reslink/privacy.py`, `reslink/procedures.py`,
-  `tests/fixtures/procedures_sample.md`, `tests/test_procedure_answers.py`,
-  `tests/test_procedures.py`, and this file.
+- **Branch:** `main`. **Latest commit:** `8dff352 feat: integrate procedural knowledge into Larry`.
+  All Milestone 4 work, including `data/procedures/` and this file, is committed.
+- **Uncommitted: the approved repository cleanup** (no behavior change; tests unchanged):
+  - `reslink/assistant.py`: removed the unused `resolve_citations()`;
+  - `requirements.txt`: dropped the unused `beautifulsoup4`, Python version comment now 3.14;
+  - `.env.example`: **restored**, variable names only;
+  - `data/documents/.gitkeep`: deleted (the folder holds tracked PDFs);
+  - `.gitignore`: removed the obsolete `chroma_db/` rule, added `.claude/settings.local.json`;
+  - `AGENTS.md`: Python 3.14 target;
+  - `scripts/check_gemini.py`: refactored to use the app's settings and Gemini wrapper (1 request,
+    no hardcoded model, key never printed);
+  - `docs/ARCHITECTURE.md`: rewritten to describe the system as built;
+  - `CLAUDE.md`: first-hour sections removed, points to this file;
+  - `docs/SESSION_HANDOFF.md`: this refresh.
 - **Ignored, do NOT commit:** `.env` (contains `GEMINI_API_KEY`, `GEMINI_MODEL`), `.venv/`,
   `.pytest_cache/`, and `data/index/`. `data/index/` holds `chunks.json`, `chroma/`, and the eval
   result JSONs; all of it can be rebuilt.
@@ -206,23 +214,19 @@ Every fact was checked by hand against the sources. The check-in answer came bac
    403 from Cloudflare. If the user verifies it, add it to `resources.json` and to the sidecar's
    `related` lists.
 
-**Bugs and gaps found during this handoff (not fixed, because no code changes were allowed):**
-- **`.env.example` is missing.** It was deleted in commit `1b823c5`, but README setup still says
-  `Copy-Item .env.example .env` / `cp .env.example .env`. Recreate it with key **names** only:
-  `GEMINI_API_KEY=`, `GEMINI_MODEL=`.
-- **`requirements.txt` line 1 comment still says "target: Python 3.12";** the project decision is
-  3.14.
-- **`scripts/check_gemini.py`** (the user's file) falls back to a hardcoded model
-  (`gemini-3.5-flash-lite`), which goes against decision 5. It also uses `client.interactions.create`
-  rather than the app's `models.generate_content`. Optional cleanup; ask the user first.
-- **`docs/ARCHITECTURE.md` is out of date:** it still describes a `services/` layout and the original
-  plan. Low priority; DECISIONS.md is the source of truth.
-- PRD demo scenarios 1 (weekly report) and 2 (hall program) still have **no supporting source**, and
-  Larry correctly declines them. Per the PRD, replace them with supported scenarios for the demo.
+**Gaps found at the first handoff: resolved by the approved cleanup (uncommitted):**
+- ~~`.env.example` missing~~: restored, names only.
+- ~~`requirements.txt` says Python 3.12~~: now 3.14; unused `beautifulsoup4` removed.
+- ~~`scripts/check_gemini.py` hardcoded model / separate API~~: now uses the app's integration.
+- ~~`docs/ARCHITECTURE.md` out of date~~: rewritten to match the code.
+
+**Still open:**
+- PRD demo scenarios 1 (weekly report) and 2 (hall program) have **no supporting source**, and Larry
+  correctly declines them. Per the PRD, replace them with supported scenarios for the demo.
 
 **Demo preparation priorities (proposed):**
-1. The user commits Milestone 4.
-2. Recreate `.env.example`, fix the requirements comment.
+1. The user commits the cleanup.
+2. Run `python -m scripts.check_gemini` (1 call) to confirm the key, model and quota.
 3. Run `build_index` on the demo machine ahead of time (model download, ~79 MB).
 4. One live eval run to confirm, then freeze features.
 5. Write a demo script using **supported** scenarios, for example:
@@ -235,11 +239,12 @@ Every fact was checked by hand against the sources. The check-in answer came bac
 6. Take backup screenshots in case of quota or network failure. Keyword-only and "sources only"
    modes still work without Gemini.
 
-**Recommended next milestone (proposed, not approved): "M5: demo hardening and freeze".** It covers:
-- the `.env.example` / requirements fixes;
-- the optional `check_gemini.py` cleanup;
-- syncing ARCHITECTURE.md;
-- a final live eval and a demo script in `docs/DEMO.md`;
+**Recommended next milestone (proposed, not approved): "M5: demo hardening and freeze".** The
+repo fixes are done; what remains:
+- a final live eval (confirms `format_steps` on live output);
+- a real-browser pass;
+- a demo script in `docs/DEMO.md` using supported scenarios;
+- backup screenshots;
 - a rehearsal on the demo machine.
 
 Only consider the staff bulletin if the user explicitly approves it after M5.
@@ -255,8 +260,9 @@ py -3.14 -m venv .venv
 pip install -r requirements-dev.txt
 ```
 
-**Environment.** Create `.env` in the repo root with two variables: `GEMINI_API_KEY` (your key) and
-`GEMINI_MODEL` (a model your account can use). `.env` is git-ignored. **Never print, log or commit
+**Environment.** Copy `.env.example` to `.env` and fill in `GEMINI_API_KEY` (your key) and
+`GEMINI_MODEL` (a model your account can use); the three `RESLINK_*_PATH` overrides are optional.
+Check connectivity with `python -m scripts.check_gemini` (1 request). `.env` is git-ignored. **Never print, log or commit
 the key.** Claude should check configuration with `load_settings().gemini_configured` and never read
 `.env` directly. To run without Gemini, set `GEMINI_MODEL` to empty; the app then shows
 "sources only" answers.
@@ -295,8 +301,9 @@ Until then the sidebar shows the semantic index as **stale** and retrieval falls
 ## 8. Resume checklist for the next Claude Code session
 
 1. Read `CLAUDE.md`, `AGENTS.md`, this file, then `docs/DECISIONS.md` (items 1–36).
-2. Run `git status` and `git log --oneline -5`. Check whether the user committed Milestone 4
-   (expected new commit after `92c425e`). If not, **don't commit**; just note it.
+2. Run `git status` and `git log --oneline -5`. Milestone 4 is `8dff352`. Check whether the user
+   committed the repository cleanup (expected new commit after `8dff352`). If not, **don't
+   commit**; just note it.
 3. Check the environment **without exposing secrets**:
    `python -c "from reslink.config import load_env_file, load_settings; load_env_file(); s=load_settings(); print(s.gemini_model, s.gemini_configured)"`.
 4. Run `pytest`. Expect **313 passed, 4 xfailed**; investigate any difference before doing anything

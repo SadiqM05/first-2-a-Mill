@@ -17,7 +17,6 @@ ENV/
 .streamlit/secrets.toml
 
 # Local indexes and databases (machine-specific, rebuild with scripts/)
-chroma_db/
 data/index/
 *.sqlite3
 
@@ -33,3 +32,6 @@ dist/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Claude Code local (per-developer) settings
+.claude/settings.local.json

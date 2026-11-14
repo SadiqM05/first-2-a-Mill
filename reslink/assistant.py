@@ -306,11 +306,6 @@ def cited_evidence(cited_ids: list[str], evidence: list[Evidence]) -> list[Evide
     return list(out.values())
 
 
-def resolve_citations(cited_ids: list[str], evidence: list[Evidence]) -> tuple[Citation, ...]:
-    """Map model-cited IDs onto retrieved evidence. IDs that weren't retrieved are dropped."""
-    return tuple(_citation(e) for e in cited_evidence(cited_ids, evidence))
-
-
 def source_caveats(cited: list[Evidence]) -> tuple[str, ...]:
     """Source-quality notices for cited evidence, decided by code (never by the model)."""
     caveats: list[str] = []

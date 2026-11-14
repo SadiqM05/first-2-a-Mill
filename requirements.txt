@@ -1,8 +1,7 @@
-# Direct runtime dependencies for ResLink AI (target: Python 3.12)
+# Direct runtime dependencies for ResLink AI (target: Python 3.14)
 streamlit>=1.40
 google-genai>=1.0
 python-dotenv>=1.0
 chromadb>=1.0          # local vector store + built-in ONNX embeddings (Milestone 3)
 pymupdf>=1.24          # PDF text extraction (Milestone 2)
-requests>=2.32         # fetching curated public pages (Milestone 2)
-beautifulsoup4>=4.12   # HTML text extraction (Milestone 2)
+requests>=2.32         # downloading catalog PDFs in scripts/build_index.py

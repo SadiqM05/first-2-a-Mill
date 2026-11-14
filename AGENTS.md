@@ -26,6 +26,6 @@ Rules for anyone (human or AI agent) changing this repo. Product intent is in
 
 ## Workflow
 
-- Python 3.12 target. `pip install -r requirements-dev.txt`, then `pytest` before every commit.
+- Python 3.14 target (3.12 side-by-side venv is the documented fallback). `pip install -r requirements-dev.txt`, then `pytest` before every commit.
 - Small, focused changes; don't rewrite a teammate's module without coordinating.
 - Record approved architecture/scope changes in `docs/DECISIONS.md`.

@@ -1,146 +1,199 @@
 # ResLink AI — Technical Architecture
 
-**Status:** Proposed hackathon implementation architecture. This is a design, not a claim that components are already built.
+**Status:** describes the system **as implemented** through Milestone 4 (commit `8dff352` and
+later cleanup). The reasons behind each choice are in `docs/DECISIONS.md`; measured quality is
+in `docs/EVALUATION.md`.
 
-## 1. Architecture overview
+## 1. Overview
 
 ```mermaid
 flowchart TD
-  U[RA using browser] --> S[Streamlit UI]
-  S --> A[Python application services]
-  A --> C[Verified resource catalog: JSON]
-  A --> R[Retriever]
-  R --> V[ChromaDB local vector index]
-  V --> R
-  A --> G[Gemini API: grounded response generation]
-  G --> A
-  A --> S
-  D[Public UT webpages and PDFs] --> I[Offline/manual ingestion script]
-  I --> E[Text extraction and chunking]
-  E --> M[Sentence Transformers embeddings]
-  M --> V
-  I --> C
-  B[Optional sample staff bulletin JSON] -. stretch only .-> I
+  U[RA in browser] --> S[Streamlit app.py: dashboard + Larry floating chat]
+  S -->|question| P{Privacy check}
+  P -->|obvious personal info| S
+  P --> H[HybridRetriever]
+  H --> K[Keyword: catalog + document units]
+  H --> V[ChromaDB semantic search: local ONNX embeddings]
+  K --> F[RRF fusion: catalog and documents fused separately]
+  V --> F
+  F -->|evidence, no URLs| G[Gemini via google-genai: JSON answer]
+  G --> C[Citation validation + caveats + related links + step formatting]
+  C --> S
+  subgraph Offline build: scripts/build_index.py
+    D[Public UT PDFs] --> X[PyMuPDF text extraction + chunking]
+    M[Front Desk Manual Markdown transcription] --> Q[Procedure parser]
+    X --> J[data/index/chunks.json]
+    J --> V
+    Q --> V
+    R[data/resources.json catalog metadata] --> V
+  end
 ```
 
-**Data boundary:** Public/approved non-sensitive content and selected retrieved excerpts may be sent to Gemini for generation. Local resource data and vector index remain on the developer machine. This is **local-first, not fully offline**.
+**Data boundary:** the catalog, documents, chunks and vector index stay on the local machine.
+Only the user's question and the retrieved evidence (public or approved text, with no URLs) are
+sent to Gemini. Questions with obvious personal information are blocked first. The app is
+local-first, not fully offline: Gemini needs network access, and the first index build downloads
+the embedding model.
 
 ## 2. Stack
 
-| Layer | Proposed technology | Responsibility |
+| Layer | Technology (as built) | Responsibility |
 |---|---|---|
-| UI | Streamlit | Resource categories, chat, cards, citations, status and errors |
-| Application | Python | Orchestrate catalog lookup, retrieval, generation, formatting |
-| Generation | Gemini API (model to select after account/quota verification) | Produce short answers from supplied evidence |
-| Vector store | ChromaDB (persistent local collection) | Semantic nearest-neighbor retrieval |
-| Embeddings | Sentence Transformers (model to select/test locally) | Encode chunks and queries in the same vector space |
-| PDF extraction | PyMuPDF | Extract document text and page metadata |
-| Web extraction | requests + BeautifulSoup | Extract text from explicitly selected public pages |
-| Structured resources | JSON | Store verified titles, categories, URLs, source metadata |
-| Evaluation | pytest + JSON question set (or simple Python runner) | Verify deterministic utilities and track scenario outcomes |
+| UI | Streamlit 1.67 (`app.py`, `reslink/ui.py`, `reslink/larry.py`, `reslink/static/larry.css`) | Category dashboard, resource cards, sidebar status, Larry floating chat |
+| Generation | Gemini through `google-genai` (`reslink/assistant.py`); model from `GEMINI_MODEL` | JSON answer `{sufficient, answer, cited_ids}` from supplied evidence only |
+| Keyword retrieval | Pure Python (`reslink/retrieval.py`) | Weighted catalog matching; BM25-style IDF over document units |
+| Semantic retrieval | ChromaDB 1.5 persistent collection + built-in ONNX all-MiniLM-L6-v2 (`reslink/semantic.py`) | Nearest catalog entries and chunks; telemetry disabled |
+| PDF ingestion | PyMuPDF + requests (`reslink/ingest.py`, `scripts/build_index.py`) | Download catalog PDFs, extract text per page, chunk |
+| Procedure ingestion | Standard library (`reslink/procedures.py`) | Parse the Markdown transcription into whole-procedure units |
+| Catalog | JSON (`data/resources.json`, validated by `reslink/catalog.py`) | Verified titles, categories, URLs, keywords |
+| Privacy | Regex (`reslink/privacy.py`) | Block and redact obvious IDs, emails, phone numbers (not comprehensive) |
+| Evaluation | pytest; `scripts/compare_retrieval.py`; `scripts/run_eval.py` | Offline unit/retrieval tests, offline retrieval metrics, budgeted live eval |
 
-**Avoid for the hackathon:** FastAPI, React, TypeScript, cloud infrastructure, login system, continuous crawling, and agentic actions.
+Python 3.14. No web framework, database server, authentication or cloud infrastructure.
 
-## 3. User request flow
+## 3. Content sources
 
-1. User selects a category or enters a question in Streamlit.
-2. App checks the verified catalog for matching resource titles/categories/keywords and retrieves relevant document chunks from ChromaDB.
-3. App assembles a bounded context containing excerpts and explicit source identifiers.
-4. Gemini is instructed to answer **only** from supplied context, keep procedures concise, and acknowledge insufficient evidence.
-5. App displays the answer plus citations and verified resource cards assembled **by application code**, not URLs invented by the LLM.
-6. If Gemini is unavailable, show relevant retrieved sources and a clear status message rather than inventing an answer.
+| Source | Type | How it's used |
+|---|---|---|
+| Portals (maintenance/Asset Essentials, lockout card access, StarRez roster, Maxient incident form) | `portal` | Catalog metadata and verified links only. **Content is never fetched or indexed.** |
+| RA Job Description, University Housing Policies | `pdf` | Downloaded and extracted into page chunks (`data/index/chunks.json`); PDFs kept in `data/documents/` |
+| Front Desk Residence Hall Manual | `transcription` | No public URL. Parsed live from `data/procedures/*.md` and its sidecar `*.meta.json` (related catalog IDs, review flags). Not independently verified as current. |
 
-## 4. Ingestion pipeline
+## 4. Request flow (`answer_question` in `reslink/assistant.py`)
 
-1. Manually curate publicly accessible official university URLs and PDFs; check accessibility and appropriateness.
-2. Record each resource in `data/resources.json` with a stable ID, title, category, source URL, content type, and optional description/keywords.
-3. Download or read allowed content on demand for ingestion; retain source URL and PDF page numbers where possible.
-4. Normalize extracted text, chunk into moderately sized overlapping passages (initial chunk parameters to be tuned through tests).
-5. Create embeddings using one fixed local Sentence Transformers model.
-6. Upsert chunks into a persistent ChromaDB collection with stable IDs and metadata (`resource_id`, `source_url`, `title`, `page`, `chunk_index`).
-7. Validate samples manually before treating the index as usable.
+1. **Privacy check.** Blank questions, or questions with obvious personal information, stop here.
+   No retrieval and no API call; Larry shows a notice and stores a redacted copy in session history.
+2. **Retrieval** (`HybridRetriever.retrieve`):
+   - **Keyword:** catalog scoring, plus ranked document *units*. A unit is a PDF page or a whole
+     procedure section.
+   - **Semantic:** Chroma searched separately for catalog metadata (nearest 1, distance ≤ 0.65) and
+     document chunks (nearest 8, ≤ 0.75, grouped into at most 1 unit).
+   - **Fusion:** reciprocal rank fusion (k = 60), applied to catalog and document results
+     separately. Output: up to 3 catalog entries and up to 3 document units.
+   - Every hit must resolve to a validated catalog resource, or it's dropped.
+3. **No evidence** → insufficient-evidence reply, with no Gemini call.
+4. **Gemini** gets the system rules plus evidence blocks.
+   - Evidence IDs look like `resource-id`, `resource-id@pN` (PDF page) or
+     `resource-id#section-slug` (procedure).
+   - The rules: answer only from evidence; never write URLs; set `sufficient` only for a direct
+     answer; full walkthrough vs. single-step answers; never invent steps, fees or fields; keep
+     template placeholders; never request personal details.
+5. **Validation by code:**
+   - cited IDs must be in the retrieved evidence (others are dropped);
+   - no valid citation → the answer is withheld;
+   - URLs written by the model are stripped;
+   - inline numbered steps are put on separate lines (formatting only).
+6. **Response:** answer, citations, and resources (cited ones plus the procedures' related catalog
+   resources). Caveats are added by code: "not independently verified as current" (transcription),
+   "Incomplete source", "Flagged for review".
+7. **Failures:** if Gemini isn't configured, errors or returns malformed JSON, the response is
+   status `error` with the matching verified sources only. Only the exception type and status
+   code are shown.
 
-Do not index empty text, duplicate content blindly, or private documents. Respect site access restrictions and avoid scraping pages that disallow automated access.
+## 5. Data contracts
 
-## 5. Data contracts (proposed)
+**Catalog entry** (`reslink.catalog`, strict, all-or-nothing):
 
-**Resource catalog entry** (`data/resources.json`):
+| Field | Rule |
+|---|---|
+| `id`, `title`, `category` | Required. Category ∈ maintenance, reporting, programming, policies, ra_portals, procedures. |
+| `url` | Required `https://` for every type **except** `transcription`, which must have none. Placeholder hosts (`example.*`) are rejected outside tests. |
+| `content_type` | `webpage`, `pdf`, `form`, `portal` (sign-in only, never ingested), `transcription` |
+| `source_path` | Transcriptions only: repo-relative Markdown file |
+| `description`, `keywords` | Optional. No unknown fields allowed. |
 
-```json
-{
-  "id": "resource-001",
-  "title": "Example resource title — replace with verified title",
-  "category": "reporting",
-  "url": "https://example.org/replace-with-verified-source",
-  "description": "Placeholder description",
-  "keywords": ["weekly report"],
-  "content_type": "webpage"
-}
-```
+**Procedure Markdown:**
+- `## Group (pp. X–Y)` starts a group; the page range is required.
+- Each `### Procedure` is one unit, inherits the group's range, and is stored verbatim and never split.
+- Group intro text becomes "Group — Overview"; a group with no `###` becomes one unit.
+- `**Source limitation:**` marks a unit incomplete; web addresses are flagged and hidden from
+  evidence.
+- The sidecar `.meta.json` has `related` (catalog IDs) and `review` (flags).
 
-This is a **schema example only**. The example URL is not a UT resource and must not appear in demo results.
+**Models** (`reslink/models.py`):
+- `Resource`
+- `Chunk` (`page`, optional `section` / `page_end` / `incomplete` / `review` / `related`)
+- `Evidence` (`evidence_id`, `section`, `related` resources)
+- `Citation` (`label` like "Front Desk Residence Hall Manual, § Checking IN Packages, pp. 30–32";
+  `link` is None when there's no public URL; PDFs get `#page=N`)
+- `AssistantResponse` (`status`, `answer`, `resources`, `citations`, `notice`, `caveats`)
 
-**Retrieved evidence:** `resource_id`, `title`, `source_url`, `page` (if available), `text`, `score` (if available).
+## 6. Index build and freshness
 
-**Response object (internal Python dict/dataclass):** `answer`, `citations`, `resources`, `status` (`grounded`, `insufficient_evidence`, or `error`).
+`python -m scripts.build_index`:
+1. Downloads catalog PDFs into `data/documents/` (skipped if present) and extracts and chunks them
+   (250 words, 50-word overlap, per page) into `data/index/chunks.json`.
+2. Parses the transcriptions.
+3. Rebuilds the Chroma collection in `data/index/chroma` from catalog metadata, PDF chunks and
+   procedure units.
 
-## 6. Safety, accuracy, and privacy guardrails
+The collection stores a **fingerprint** of model + schema version + every embedded document. When
+the app opens the index and the fingerprint doesn't match the current catalog/chunks/procedures,
+the index is **stale**: semantic search is skipped and the sidebar says why. `data/index/` is
+git-ignored and can always be rebuilt.
 
-- The model must never invent a URL; UI links must be selected from the curated catalog.
-- Citations must map to retrieved content, not just a resource name suggested by the model.
-- If evidence is missing or conflicting, state the limitation and link to the relevant official source if one is verified.
-- Treat source documents as untrusted content; do not follow instructions embedded in retrieved pages.
-- Never ingest private resident data, incident details, or internal staff communications without authorization.
-- Keep API credentials in `.env`, exclude them from Git, and provide `.env.example` with placeholder keys only.
-- The assistant is informational and must not claim authority to interpret or override university policy.
+## 7. Fallbacks
 
-## 7. Suggested repository layout
+| Condition | Behavior |
+|---|---|
+| ChromaDB missing, index missing/stale, model not cached, or semantic search raises | Keyword-only retrieval (same results as `KeywordRetriever`); sidebar: "Retrieval: keyword only" + reason |
+| `chunks.json` missing | Catalog metadata + procedures still answerable |
+| Procedures file invalid | Sidebar warning; other sources unaffected |
+| Gemini not configured / failing / rate-limited (one retry on 429/5xx) | `error` status with verified source cards only |
+| Catalog invalid | Error panel listing every problem; no resources shown |
+
+The retriever (and so the embedding model) is created once per server process
+(`st.cache_resource`). It's keyed on the content fingerprint plus the index file time, so a rebuild
+is picked up without a restart.
+
+## 8. UI
+
+- **Dashboard:** one tab per category; resource cards link only to catalog URLs. Portals show
+  "sign-in required"; the manual shows "no public link · not independently verified as current".
+- **Larry** (`reslink/larry.py`):
+  - floating launcher and panel built from keyed `st.container`s and scoped CSS
+    (`.st-key-larry-*` only);
+  - the panel is an `st.fragment`, so sending a message doesn't rerun the dashboard;
+  - history is kept in `st.session_state` (memory only, redacted);
+  - the input is disabled while answering;
+  - responsive on desktop and phone sizes.
+- **Theme:** Streamlit's built-in System/Light/Dark menu. Larry uses `Canvas` / `currentColor`, so
+  it follows the active theme. **Never** set `[theme] base` in `.streamlit/config.toml`; a test
+  guards this.
+
+## 9. Safety, accuracy and privacy rules (enforced in code)
+
+- Links come only from `data/resources.json`. The model never sees URLs, and any URLs it writes
+  are removed.
+- Citations must match retrieved evidence. Semantic similarity never decides whether a question
+  is supported.
+- Source text is treated as data: evidence tags are sanitized, and the prompt says to ignore
+  instructions inside the evidence.
+- Transcription quality issues are shown to users and never silently corrected (see
+  `docs/SOURCE_REVIEW.md`).
+- Credentials live only in `.env` (git-ignored); `.env.example` lists names only. Check
+  connectivity with `python -m scripts.check_gemini` (1 request, key never printed).
+- Personal information: an obvious-pattern check only. Names, room numbers and NetIDs are not
+  detected.
+
+## 10. Repository layout
 
 ```text
-reslink-ai/
-├── app.py                    # Streamlit entry point
-├── AGENTS.md                 # Shared agent/project rules
-├── CLAUDE.md                 # Claude Code handoff and workflow
-├── README.md
-├── requirements.txt
-├── .env.example
-├── .gitignore
-├── data/
-│   ├── resources.json       # Verified catalog; initially empty
-│   └── documents/           # Public/authorized documents only
-├── services/
-│   ├── catalog.py           # Read and validate resources
-│   ├── ingest.py            # Extract, chunk, embed, index
-│   ├── retrieval.py         # Query and rank evidence
-│   └── assistant.py         # Gemini prompt and answer orchestration
-├── tests/
-│   ├── test_questions.json  # Expected sources for sample questions
-│   └── test_catalog.py
-├── docs/
-│   ├── PRD.md
-│   ├── ARCHITECTURE.md
-│   ├── EVALUATION.md         # Create during validation
-│   └── DECISIONS.md         # Create as choices are made
-└── presentation/            # Slides and demo script later
+app.py                     Streamlit entry point (wiring, caching)
+reslink/                   core package (only ui.py and larry.py import Streamlit)
+  models.py config.py catalog.py ingest.py procedures.py retrieval.py
+  semantic.py assistant.py privacy.py ui.py larry.py static/larry.css
+scripts/                   build_index, compare_retrieval, run_eval, check_gemini
+data/resources.json        verified catalog
+data/documents/            public PDFs (tracked)
+data/procedures/           Front Desk Manual transcription + sidecar
+data/index/                built index and eval outputs (git-ignored)
+tests/                     pytest suite, eval_questions.json, fixtures (placeholder data only)
+docs/                      PRD, ARCHITECTURE, DECISIONS, EVALUATION, SOURCE_REVIEW, SESSION_HANDOFF
 ```
 
-This is a **suggested structure**, not a requirement to create every file before writing a working vertical slice.
+## 11. Out of scope (by design)
 
-## 8. Development sequence and interfaces
-
-**Milestone 1 — End-to-end vertical slice:** One verified resource → ingestion → retrieval → Gemini answer → Streamlit display → clickable verified link.
-
-**Milestone 2 — Usable MVP:** Resource categories, more curated sources, procedural responses, provenance, robust empty/error states.
-
-**Milestone 3 — Evaluation/demo:** Test representative queries, verify citations and URLs, prepare demonstration, document limitations.
-
-**Milestone 4 — Stretch only:** JSON-backed staff bulletin with optional indexing and AI search. Do not start until the first three milestones are stable.
-
-**Collaboration:** One contributor can curate/validate resources and evaluation questions while the other develops services and UI. Use separate branches or file ownership; avoid committing `.env`, `.venv`, downloaded sensitive data, or machine-specific Chroma indexes.
-
-## 9. Known uncertainties
-
-- Exact official UT resource URLs and their coverage have not been collected or validated.
-- Gemini model availability, quota, and API access must be verified in the team's account.
-- Embedding model, chunk size, retrieval top-k, and score thresholds require practical testing.
-- The staff bulletin is not part of the committed MVP.
+Authentication/RBAC, deployment, FastAPI/React, continuous crawling, submitting forms or taking
+actions in university systems, and indexing portal contents or private data. The staff bulletin
+remains an unapproved stretch goal.
