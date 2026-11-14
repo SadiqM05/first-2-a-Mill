@@ -122,7 +122,8 @@ def main(argv: list[str] | None = None) -> int:
     if index is None:
         print(f"semantic index unavailable: {status}")
         return 1
-    cases = json.loads(QUESTIONS.read_text(encoding="utf-8"))
+    # Follow-up questions need their conversation; standalone retrieval metrics exclude them.
+    cases = [c for c in json.loads(QUESTIONS.read_text(encoding="utf-8")) if not c.get("follow_up_of")]
     index.search("warm up", n=1)  # load the model before timing
 
     results = {

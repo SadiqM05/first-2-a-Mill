@@ -85,7 +85,8 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 | M3: hybrid retrieval (ChromaDB + RRF), stricter `sufficient` rule | **Done, committed** | `92c425e` |
 | M4: procedures knowledge base, privacy check, section citations | **Done, committed** | `8dff352` |
 | Repository cleanup (approved audit) | **Done, committed** | `13d2b2d` |
-| **M5: Staff Bulletin (read-only tab, fictional demo data)** | **Done, NOT committed** | (working tree; see §3) |
+| M5: Staff Bulletin (read-only section, read/unread, fictional demo data) | **Done, committed** | `a273979` |
+| **M6: Larry response quality (format, follow-ups, forms vs portals)** | **Done, NOT committed** | (working tree; see §3) |
 
 **Features implemented (all done):**
 - **Catalog:** 7 verified resources. Five are portals or PDFs with checked URLs (maintenance/Asset
@@ -132,18 +133,22 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 
 ---
 
-## 3. Current repository state (refreshed after Milestone 5)
+## 3. Current repository state (refreshed during Milestone 6)
 
-- **Branch:** `main`. **Latest commit:** `13d2b2d clean up repository and update project docs`
-  (Milestone 4 = `8dff352`).
-- **Uncommitted: Milestone 5, the Staff Bulletin** (no change to AI, retrieval or procedures):
-  - new: `reslink/bulletin.py`, `data/bulletins.json`, `tests/test_bulletin.py`;
-  - modified: `app.py` (loads the bulletin; top-level Resources | Staff Bulletin switch),
-    `reslink/ui.py` (`render_section_nav`, `render_bulletin` without a search box), `reslink/config.py` (`bulletin_path`,
-    `RESLINK_BULLETIN_PATH`), `.env.example` (commented optional line), `tests/test_app.py` (tab
-    list now ends with "Staff Bulletin");
-  - docs: `README.md`, `CLAUDE.md`, `docs/ARCHITECTURE.md` (§8a), `docs/DECISIONS.md` (37–42), and
-    this file.
+- **Branch:** `main`. **Latest commit:** `a273979 feat: add staff bulletin with read/unread
+  tracking` (Milestone 5; cleanup = `13d2b2d`; Milestone 4 = `8dff352`).
+- **Uncommitted: Milestone 6, Larry response quality** (no change to retrieval, the catalog,
+  sources, the index, or the Staff Bulletin):
+  - `reslink/assistant.py`: prompt format/forms/conversation rules, history sanitization,
+    follow-up detection, retrieval query, typed notes, `privacy_blocked`;
+  - `reslink/models.py`: `Note` and the note kinds, `AssistantResponse.privacy_blocked`;
+  - `reslink/ui.py`: compact chat `render_response` (dashboard cards unchanged);
+  - `reslink/larry.py` and `app.py`: pass recent history;
+  - `scripts/run_eval.py` (multi-turn `follow_up_of`, `--tag`, content checks) and
+    `scripts/compare_retrieval.py` (excludes follow-ups);
+  - tests: new `tests/test_response_quality.py`, updated `tests/test_procedure_answers.py`,
+    `tests/test_eval_retrieval.py`, `tests/eval_questions.json`;
+  - docs: ARCHITECTURE (§4), DECISIONS (45–48), EVALUATION (Milestone 6), and this file.
 - **Ignored, do NOT commit:** `.env` (contains `GEMINI_API_KEY`, `GEMINI_MODEL`), `.venv/`,
   `.pytest_cache/`, and `data/index/`. `data/index/` holds `chunks.json`, `chroma/`, and the eval
   result JSONs; all of it can be rebuilt.
@@ -157,8 +162,9 @@ question -> privacy check (obvious IDs/emails/phones -> blocked, no API call)
 
 ## 4. Testing and evaluation (measured 2026-11-14)
 
-**Automated:** `pytest` → **370 passed, 4 xfailed** (374 collected, about 35 s, offline, no Gemini
-calls). That's 313 before Milestone 5 plus 57 bulletin, navigation and read/unread tests. The
+**Automated:** `pytest` → **404 passed, 4 xfailed** (408 collected, about 37 s, offline, no Gemini
+calls). That includes the Milestone 5 bulletin tests and 30 Milestone 6 response-quality tests
+(`tests/test_response_quality.py`). The
 4 xfails are documented known misses:
 - keyword-only: "How do I return a letter to sender?" (hybrid finds it), "What is SC Logic?";
 - hybrid: "My resident can't get into their room" (lockout portal not surfaced), "What is SC Logic?".
@@ -282,7 +288,7 @@ the key.** Claude should check configuration with `load_settings().gemini_config
 ```powershell
 python -m scripts.build_index        # PDFs -> chunks.json -> Chroma (+ procedures). Stop the app first.
 streamlit run app.py                 # sidebar should show: 7 resources, 46 passages, Retrieval: hybrid
-pytest                               # offline, ~35 s, expect 370 passed / 4 xfailed
+pytest                               # offline, ~37 s, expect 404 passed / 4 xfailed
 python -m scripts.compare_retrieval --sweep   # offline retrieval metrics
 python -m scripts.run_eval --live    # LIVE: 8 Gemini calls (quota). --keyword-only to compare.
 ```
@@ -312,13 +318,13 @@ Until then the sidebar shows the semantic index as **stale** and retrieval falls
 
 ## 8. Resume checklist for the next Claude Code session
 
-1. Read `CLAUDE.md`, `AGENTS.md`, this file, then `docs/DECISIONS.md` (items 1–44).
+1. Read `CLAUDE.md`, `AGENTS.md`, this file, then `docs/DECISIONS.md` (items 1–48).
 2. Run `git status` and `git log --oneline -5`. The cleanup is `13d2b2d`. Check whether the user
    committed Milestone 5, the Staff Bulletin (expected new commit after `13d2b2d`). If not,
    **don't commit**; just note it.
 3. Check the environment **without exposing secrets**:
    `python -c "from reslink.config import load_env_file, load_settings; load_env_file(); s=load_settings(); print(s.gemini_model, s.gemini_configured)"`.
-4. Run `pytest`. Expect **370 passed, 4 xfailed**; investigate any difference before doing anything
+4. Run `pytest`. Expect **404 passed, 4 xfailed**; investigate any difference before doing anything
    else.
 5. If `data/index/` is missing or the sidebar says stale, run `python -m scripts.build_index`.
 6. Ask the user:

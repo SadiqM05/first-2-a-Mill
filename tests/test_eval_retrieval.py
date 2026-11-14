@@ -23,7 +23,10 @@ from reslink.ingest import load_chunks
 from reslink.retrieval import HybridRetriever, KeywordRetriever
 from reslink.semantic import CATALOG_MAX_DISTANCE, DEFAULT_MAX_DISTANCE, SemanticIndex
 
-CASES = json.loads((PROJECT_ROOT / "tests" / "eval_questions.json").read_text(encoding="utf-8"))
+ALL_CASES = json.loads((PROJECT_ROOT / "tests" / "eval_questions.json").read_text(encoding="utf-8"))
+# Follow-up questions only make sense with their conversation; they're covered by
+# tests/test_response_quality.py (history-aware retrieval), not by standalone retrieval here.
+CASES = [c for c in ALL_CASES if not c.get("follow_up_of")]
 CATALOG = load_catalog(DEFAULT_CATALOG_PATH)
 CHUNKS, _ = load_chunks(DEFAULT_INDEX_PATH, CATALOG, PROJECT_ROOT)
 RETRIEVER = KeywordRetriever(CATALOG, CHUNKS)
@@ -58,7 +61,16 @@ def test_expected_statuses_are_valid():
 
 def test_live_subset_is_small():
     # Gemini quota budget; privacy-blocked questions make no API call.
-    assert sum(1 for c in CASES if c.get("live") and not c.get("privacy")) <= 8
+    for tag in ("live", "live_m6"):
+        assert sum(1 for c in ALL_CASES if c.get(tag) and not c.get("privacy")) <= 8, tag
+
+
+def test_follow_up_cases_reference_an_earlier_question():
+    asked = []
+    for c in ALL_CASES:
+        if c.get("follow_up_of"):
+            assert c["follow_up_of"] in asked, c["question"]
+        asked.append(c["question"])
 
 
 # Procedure questions are checked by document targets (below), not by catalog-null expectations.

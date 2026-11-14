@@ -155,3 +155,34 @@ emails and phone numbers. **Names, room numbers, NetIDs and birthdays written in
 detected.** Larry's input placeholder asks users not to enter resident names or IDs. Chat history
 is kept in memory for the browser session only and never written to disk. Detected patterns are
 redacted before they're stored or shown again.
+
+# Milestone 6: Larry response quality and follow-ups
+
+Measured 2026-11-14 with `gemini-3.5-flash-lite`. Retrieval code is unchanged. Offline
+`compare_retrieval` shows hybrid R@3 95% (39 supported standalone questions). Follow-up questions
+are excluded from standalone retrieval metrics and are tested history-aware instead.
+
+## Live multi-turn evaluation (`run_eval --live --tag live_m6`, 8 calls) + targeted rechecks
+
+| Turn | Result |
+|---|---|
+| How do I fill out a lockout card? | Grounded (§ Steps to Issue Access Card). Direct answer, no "According to"/§/pp. in the text. |
+| → Where is the form to fill it out? | Grounded: "The resident's lockout card form is kept in the appropriate place at the front desk." The portal is not called the form. |
+| How do I check in a package? | Grounded, 12/12 steps, one per line, no inline attributions. |
+| → Is there an online form for that? | **First run: wrong reference.** It answered about the lockout card, because the combined query also retrieved the only procedure containing "form". **Fixed** by naming the previous question in the prompt's question line. Rechecked live: cites § Checking IN Packages, "ResLink's verified sources don't include an online form for checking in packages." |
+| (after lockout) What about quiet hours? | Topic switch handled standalone: quiet-hours answer (p5). |
+| Quiet hours / weekly report / pizza | Grounded / declined / declined, unchanged. |
+
+Initial run: 8/8 statuses and 7/8 content checks; the one miss is fixed above. The wording rule
+("never say 'the evidence'") was added after that run and verified with 1 more call. A
+real-browser run with Gemini on (2 calls) confirmed the chat layout: answer → Verified links
+(Lockout Card Access · sign-in) → Sources (Front Desk Residence Hall Manual, § Steps to Issue Access
+Card, pp. 24–26) → two compact notes, with no raw URL text. **About 13 live calls in total.**
+
+**Before vs after (same questions):**
+- *Before:* "According to the Front Desk Residence Hall Manual (§ Checking IN Packages, pp. 30–32),
+  follow these steps…", followed by full resource cards (description + "transcription · no public
+  link…" caption + "Cited: …") and 2 separate yellow boxes.
+- *After:* the steps begin immediately, followed by one Sources line and compact notes.
+- *Before:* "Where is the form to fill it out?" was sent to retrieval and Gemini with no context.
+- *After:* it's resolved against the previous question and answered "kept … at the front desk".

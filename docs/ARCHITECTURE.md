@@ -62,7 +62,14 @@ Python 3.14. No web framework, database server, authentication or cloud infrastr
 
 1. **Privacy check.** Blank questions, or questions with obvious personal information, stop here.
    No retrieval and no API call; Larry shows a notice and stores a redacted copy in session history.
-2. **Retrieval** (`HybridRetriever.retrieve`):
+2. **Follow-up resolution** (no extra API call). Larry passes the last 2 exchanges, excluding
+   privacy-blocked turns, as `history`. They're re-sanitized before use: redacted, URLs and
+   evidence tags removed, truncated (answers about 600 characters).
+   - If the question refers back to something (*it, that, this, there, the form/link/portal…*,
+     but not "is there…"), the **retrieval query** is the previous question plus the current one.
+   - A question without such words (e.g. "What about quiet hours?") is retrieved on its own, so a
+     topic switch doesn't drag in the old topic's evidence.
+3. **Retrieval** (`HybridRetriever.retrieve`):
    - **Keyword:** catalog scoring, plus ranked document *units*. A unit is a PDF page or a whole
      procedure section.
    - **Semantic:** Chroma searched separately for catalog metadata (nearest 1, distance ≤ 0.65) and
@@ -70,22 +77,37 @@ Python 3.14. No web framework, database server, authentication or cloud infrastr
    - **Fusion:** reciprocal rank fusion (k = 60), applied to catalog and document results
      separately. Output: up to 3 catalog entries and up to 3 document units.
    - Every hit must resolve to a validated catalog resource, or it's dropped.
-3. **No evidence** → insufficient-evidence reply, with no Gemini call.
-4. **Gemini** gets the system rules plus evidence blocks.
+4. **No evidence** → insufficient-evidence reply, with no Gemini call.
+5. **Gemini** gets the system rules, then (if any) a "Conversation so far" block labeled
+   *context only, NOT evidence*, then the evidence blocks, then the question. For follow-ups, the
+   question line names the previous question explicitly.
    - Evidence IDs look like `resource-id`, `resource-id@pN` (PDF page) or
      `resource-id#section-slug` (procedure).
-   - The rules: answer only from evidence; never write URLs; set `sufficient` only for a direct
-     answer; full walkthrough vs. single-step answers; never invent steps, fees or fields; keep
-     template placeholders; never request personal details.
-5. **Validation by code:**
+   - **Grounding rules:** answer only from evidence; never write URLs; set `sufficient` only for a
+     direct answer; never invent steps, fees or fields; keep template placeholders; never request
+     personal details; the conversation is never a source.
+   - **Format rules:** a direct answer first; numbered steps (one per line) for full
+     walkthroughs; a specific answer for a specific question; no source names, page numbers or
+     retrieval jargon in the text (the app shows sources).
+   - **Domain rules:** paper forms vs online portals (a portal is never "the form"; say where a
+     paper form is kept; say when no verified online version exists); for ambiguous procedures
+     (lockout key vs access card), answer the likely one and name the other.
+6. **Validation by code:**
    - cited IDs must be in the retrieved evidence (others are dropped);
    - no valid citation → the answer is withheld;
    - URLs written by the model are stripped;
    - inline numbered steps are put on separate lines (formatting only).
-6. **Response:** answer, citations, and resources (cited ones plus the procedures' related catalog
-   resources). Caveats are added by code: "not independently verified as current" (transcription),
-   "Incomplete source", "Flagged for review".
-7. **Failures:** if Gemini isn't configured, errors or returns malformed JSON, the response is
+7. **Response:** answer, citations, and resources (cited ones plus the procedures' related catalog
+   resources). Typed `Note`s are added by code:
+   - `unverified` (transcription not verified as current) and `unverified_link` (an unverified web
+     address is mentioned) render as compact notes;
+   - `incomplete` and `review` (a possible transcription error) render as one prominent warning.
+
+   **Chat layout** (`ui.render_response`, Larry only): answer → **Verified links**
+   (portal/form/webpage buttons, "· sign-in", description as tooltip) → one compact **Sources**
+   line (PDF pages linked; a portal already shown as a link isn't repeated) → compact notes → the
+   warning. No descriptions, raw URLs or content types in chat; the dashboard keeps its full cards.
+8. **Failures:** if Gemini isn't configured, errors or returns malformed JSON, the response is
    status `error` with the matching verified sources only. Only the exception type and status
    code are shown.
 

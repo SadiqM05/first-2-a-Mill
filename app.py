@@ -103,9 +103,9 @@ generator = (
 )
 
 
-def ask(question: str):
-    """The only bridge from the UI to retrieval + Gemini (assistant logic unchanged)."""
-    return answer_question(question, retriever, generator)
+def ask(question: str, history=()):
+    """The only bridge from the UI to retrieval + Gemini. ``history`` resolves follow-ups only."""
+    return answer_question(question, retriever, generator, history=history)
 
 
 render_larry(ask)

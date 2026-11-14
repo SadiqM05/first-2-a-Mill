@@ -115,7 +115,7 @@ def test_grounded_procedure_answer_has_citation_unverified_caveat_and_no_link():
     assert r.status is Status.GROUNDED
     [c] = r.citations
     assert c.label.endswith("§ Checking IN Packages, pp. 30–32") and c.link is None
-    assert any("not independently verified as current" in x for x in r.caveats)
+    assert any(x.kind == "unverified" and "not independently verified as current" in x.text for x in r.caveats)
 
 
 def test_related_portal_links_come_from_catalog_ids():
@@ -127,14 +127,16 @@ def test_related_portal_links_come_from_catalog_ids():
     urls = {x.url for x in r.resources if x.url}
     assert "https://saweb.asa.utk.edu/housing_ra/ra_login.asp" in urls
     assert not any("housing.utk.edu" in u for u in urls)  # unverified URL never becomes a link
-    assert any("Flagged for review" in x and "web address" in x for x in r.caveats)
+    # The unverified web address becomes one short, compact note (not a maintainer review dump).
+    link_notes = [x for x in r.caveats if x.kind == "unverified_link"]
+    assert len(link_notes) == 1 and "isn't linked" in link_notes[0].text and not link_notes[0].prominent
 
 
 def test_incomplete_caveat_added_by_code():
     gen = FakeGenerator(ok("Stamp RTS...", RTS))
     r = answer_question("How do I return mail to sender?", FixedRetriever([rts_evidence()]), gen)
     expected = CAVEAT_INCOMPLETE.format(section="Return to Sender", text="")
-    assert any(x.startswith(expected) for x in r.caveats)
+    assert any(x.kind == "incomplete" and x.prominent and x.text.startswith(expected) for x in r.caveats)
 
 
 def test_no_caveats_for_pdf_answers():

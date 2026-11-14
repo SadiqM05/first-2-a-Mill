@@ -146,6 +146,25 @@ class Citation:
         return ", ".join(parts)
 
 
+NOTE_UNVERIFIED = "unverified"  # source not verified as current: compact note beneath Sources
+NOTE_UNVERIFIED_LINK = "unverified_link"  # source mentions an unverified web address: compact note
+NOTE_INCOMPLETE = "incomplete"  # source pages incomplete: prominent warning
+NOTE_REVIEW = "review"  # passage possibly transcribed incorrectly: prominent warning
+PROMINENT_NOTES = frozenset({NOTE_INCOMPLETE, NOTE_REVIEW})
+
+
+@dataclass(frozen=True)
+class Note:
+    """A source-quality notice added by code (never by the model)."""
+
+    kind: str
+    text: str
+
+    @property
+    def prominent(self) -> bool:
+        return self.kind in PROMINENT_NOTES
+
+
 class Status(str, Enum):
     GROUNDED = "grounded"
     INSUFFICIENT_EVIDENCE = "insufficient_evidence"
@@ -161,4 +180,5 @@ class AssistantResponse:
     resources: tuple[Resource, ...] = ()
     citations: tuple[Citation, ...] = ()
     notice: str | None = None
-    caveats: tuple[str, ...] = ()  # source-quality notices added by code (unverified, incomplete, review)
+    caveats: tuple[Note, ...] = ()  # source-quality notices added by code (see Note kinds)
+    privacy_blocked: bool = False  # True when the message was blocked by the privacy check

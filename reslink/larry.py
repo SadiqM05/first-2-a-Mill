@@ -16,6 +16,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from reslink.assistant import recent_history
 from reslink.models import AssistantResponse
 from reslink.privacy import redact
 from reslink.ui import render_response
@@ -33,7 +34,9 @@ HISTORY_KEY = "larry_history"
 
 _CSS_PATH = Path(__file__).parent / "static" / "larry.css"
 
-Ask = Callable[[str], AssistantResponse]
+# ask(question, history): history = recent (question, answer) pairs, used only to resolve
+# follow-up references (see reslink.assistant.recent_history / sanitize_history).
+Ask = Callable[[str, list], AssistantResponse]
 
 
 def _init_state() -> None:
@@ -83,7 +86,9 @@ def _render_panel(ask: Ask) -> None:
                     st.write(shown)
                 with st.chat_message("assistant", avatar=ICON):
                     with st.spinner(LOADING_MESSAGE):
-                        response = ask(question)
+                        # Last 2 usable exchanges (privacy-blocked turns excluded); the
+                        # assistant re-sanitizes them before anything reaches Gemini.
+                        response = ask(question, recent_history(st.session_state[HISTORY_KEY]))
                     render_response(response)
                 st.session_state[HISTORY_KEY].append((shown, response))
 

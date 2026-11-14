@@ -41,7 +41,8 @@ def targets(case: dict) -> set[str]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--live", action="store_true", help="only questions marked live (quota budget)")
+    parser.add_argument("--live", action="store_true", help="only questions marked with --tag (quota budget)")
+    parser.add_argument("--tag", default="live", help="which live set to run with --live (e.g. live, live_m6)")
     parser.add_argument("--keyword-only", action="store_true")
     parser.add_argument("--delay", type=float, default=1.5, help="seconds between questions (rate limits)")
     parser.add_argument("--out", type=Path, default=PROJECT_ROOT / "data" / "index" / "eval_results.json")
@@ -66,16 +67,25 @@ def main(argv: list[str] | None = None) -> int:
 
     cases = json.loads(QUESTIONS.read_text(encoding="utf-8"))
     if args.live:
-        cases = [c for c in cases if c.get("live")]
+        cases = [c for c in cases if c.get(args.tag)]
     mode = "hybrid" if index is not None else f"keyword only ({status})"
     print(f"model={settings.gemini_model} retrieval={mode} questions={len(cases)}\n")
 
     results, status_ok, cite_ok = [], 0, 0
+    answered: dict[str, str | None] = {}  # question -> answer, for multi-turn "follow_up_of" cases
     for n, case in enumerate(cases):
         if n:
             time.sleep(args.delay)
+        history = []
+        if case.get("follow_up_of"):
+            prev = case["follow_up_of"]
+            if prev not in answered:
+                print(f"SKIP  follow-up needs '{prev}' earlier in this run: {case['question']}\n")
+                continue
+            history = [(prev, answered[prev])]
         start = time.time()
-        response = answer_question(case["question"], retriever, generator)
+        response = answer_question(case["question"], retriever, generator, history=history)
+        answered[case["question"]] = response.answer
         elapsed = time.time() - start
         cites = [
             f"{c.resource.id}#{slugify(c.section)}" if c.section
@@ -100,10 +110,20 @@ def main(argv: list[str] | None = None) -> int:
             citation_ok = citation_ok and complete
         for key in ("expected_caveat", "expected_caveat_any"):
             if case.get(key) and response.status.value == "grounded":
-                has = any(case[key] in c for c in response.caveats)
+                has = any(case[key] in c.text for c in response.caveats)
                 checks.append(f"caveat '{case[key]}' {'present' if has else 'MISSING'}")
                 citation_ok = citation_ok and has
-        s_ok = response.status.value == case["expected_status"]
+        text = (response.answer or "").lower()
+        if case.get("must_include_any") and response.answer:
+            has = any(s.lower() in text for s in case["must_include_any"])
+            checks.append(f"includes one of {case['must_include_any']}: {'OK' if has else 'MISSING'}")
+            citation_ok = citation_ok and has
+        if case.get("must_not_include") and response.answer:
+            found = [s for s in case["must_not_include"] if s.lower() in text]
+            checks.append(f"must not include {case['must_not_include']}: {'OK' if not found else f'FOUND {found}'}")
+            citation_ok = citation_ok and not found
+        expected = case.get("expected_status_any") or [case["expected_status"]]
+        s_ok = response.status.value in expected
         status_ok += s_ok
         cite_ok += citation_ok
         print(f"{'PASS' if s_ok else 'FAIL'}  {response.status.value:22} {elapsed:4.1f}s  {case['question']}")
@@ -112,7 +132,7 @@ def main(argv: list[str] | None = None) -> int:
         for check in checks:
             print(f"      check: {check}")
         for caveat in response.caveats:
-            print(f"      caveat: {caveat}")
+            print(f"      note[{caveat.kind}]: {caveat.text}")
         print(f"      resources: {[r.id for r in response.resources]}")
         print(f"      answer: {response.answer or response.notice}\n")
         results.append({
@@ -121,7 +141,8 @@ def main(argv: list[str] | None = None) -> int:
             "citations": cites, "targets": sorted(want), "citation_ok": citation_ok,
             "off_target_citations": off_target, "links": [c.link for c in response.citations],
             "seconds": round(elapsed, 2), "retrieval": retriever.last_mode,
-            "caveats": list(response.caveats), "checks": checks,
+            "caveats": [{"kind": c.kind, "text": c.text} for c in response.caveats], "checks": checks,
+            "history": history,
             "resources": [r.id for r in response.resources],
         })
 

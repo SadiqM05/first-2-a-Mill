@@ -225,8 +225,39 @@ def render_bulletin(bulletin: Bulletin | None, error: BulletinError | None = Non
         _render_announcement(item, is_read(item, read_ids))
 
 
+# --- Larry chat response (compact; the dashboard keeps its full resource cards) ------------------
+
+ACTION_LINK_TYPES = ("portal", "form", "webpage")  # things an RA opens to *do* something
+
+
+def _action_links(response: AssistantResponse) -> list[Resource]:
+    return [r for r in response.resources if r.url and r.content_type in ACTION_LINK_TYPES]
+
+
+def _source_parts(response: AssistantResponse, linked_ids: set[str]) -> list[str]:
+    """Compact, de-duplicated source labels. PDF pages link to the page (catalog URL + #page)."""
+    parts: list[str] = []
+    if response.status is Status.GROUNDED:
+        for c in response.citations:
+            if c.resource.id in linked_ids and c.page is None and not c.section:
+                continue  # already shown as a verified link; don't repeat it as a source
+            label = _md_escape(c.label)
+            parts.append(f"[{label}]({c.link})" if c.link else label)
+    else:
+        for r in response.resources:
+            if r.id in linked_ids:
+                continue
+            title = _md_escape(r.title)
+            parts.append(f"[{title}]({r.url})" if r.url else title)
+    return list(dict.fromkeys(parts))
+
+
 def render_response(response: AssistantResponse) -> None:
-    """Show an assistant response. Links come only from response.resources (catalog entries)."""
+    """Larry's answer layout: notice -> direct answer/steps -> verified links -> compact sources
+    -> compact notes -> one consolidated warning (incomplete or possibly incorrect instructions).
+
+    Links come only from response.resources (catalog entries); nothing here is model-written.
+    """
     if response.notice:
         if response.status is Status.ERROR:
             st.warning(response.notice)
@@ -234,12 +265,24 @@ def render_response(response: AssistantResponse) -> None:
             st.info(response.notice)
     if response.answer:
         st.markdown(response.answer)
-    for caveat in response.caveats:  # source-quality notices added by code, not the model
-        st.warning(caveat)
-    if response.resources:
-        label = "Sources" if response.status is Status.GROUNDED else "Related verified resources"
-        st.caption(label)
-        for resource in response.resources:
-            _render_resource_card(
-                resource, tuple(c for c in response.citations if c.resource.id == resource.id)
-            )
+
+    links = _action_links(response)
+    if links:
+        st.caption("Verified links" if response.status is Status.GROUNDED else "Related verified links")
+        with st.container(horizontal=True):
+            for r in links:
+                label = f"{r.title} · sign-in" if r.requires_login else r.title
+                st.link_button(label, r.url, help=r.description or None,
+                               icon=":material/lock:" if r.requires_login else ":material/open_in_new:")
+
+    sources = _source_parts(response, {r.id for r in links})
+    if sources:
+        heading = "Sources" if response.status is Status.GROUNDED else "Related sources"
+        st.caption(f"{heading}: " + " · ".join(sources))
+
+    for note in response.caveats:
+        if not note.prominent:
+            st.caption(f"Note: {note.text}")
+    prominent = [n.text for n in response.caveats if n.prominent]
+    if prominent:
+        st.warning("\n".join(f"- {text}" for text in prominent), icon=":material/warning:")
